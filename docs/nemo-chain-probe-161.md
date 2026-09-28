@@ -58,7 +58,7 @@ Its report path also ran from the RG wrapper, creating avoidable observer-effect
 Current build:
 
 - size: `58,880` bytes
-- SHA-256: `474C9C6925E7B5C486E267CBA03332F5801A3845247E3D188C5707C2020054E2`
+- SHA-256: `C71C659DDD1A6A1C852C692C945C5E5CD1BEE9259E80C8DF86D7104290B41CB4`
 
 Changes:
 
@@ -78,6 +78,26 @@ Offline validation:
 - `LoadLibrary`: OK
 - `scs_telemetry_init`: exported
 - `scs_telemetry_shutdown`: exported
+
+## ABI cross-check before first runtime run
+
+A pre-runtime source/assembly review found one concrete ABI-width mismatch.
+
+Old declaration:
+
+```cpp
+using FnRQ = void(*)(uint32_t,void*,int64_t);
+```
+
+Static callsite/body evidence shows `14160D010` carries a full 64-bit object address in RCX.
+
+The old compiled wrapper forwarded only ECX, zeroing the upper 32 bits.
+
+The declaration and wrapper were changed to `uint64_t`.
+
+The rebuilt wrapper now forwards full RCX with 64-bit moves before the trampoline call.
+
+The same cross-check also verified that the compiler-generated sampled wrappers create normal Windows x64 outgoing call frames; the six-argument downstream wrapper explicitly forwards stack args 5/6 into the new call frame.
 
 ## Safety model
 
