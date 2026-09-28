@@ -1,6 +1,6 @@
 # Runtime capture pipeline
 
-Status: one-click launcher prepared and elevation path validated. Runtime capture pending external review.
+Status: one-click launcher prepared, elevation path validated, pre-runtime review cross-checked. Runtime capture ready.
 
 ## Goal
 
@@ -62,16 +62,13 @@ That self-test was executed successfully:
 - final WPR status was idle;
 - ETS2 was not launched.
 
-## Current gate
+## Pre-runtime review status
 
-Before the first real runtime capture, the v0.2 probe, FrameLogger v3 and launcher/fallback scripts are being subjected to one additional adversarial source review.
+The adversarial review was cross-checked against the compiled wrapper assembly.
 
-The purpose is to catch:
-- ABI/wrapper mistakes;
-- trampoline hazards;
-- telemetry races/observer effect;
-- launcher cleanup failures;
-- capture-methodology blind spots.
+One real issue was reproduced and fixed: the RQ wrapper truncated a 64-bit RCX argument because it was declared as `uint32_t`.
+
+Other claimed issues were verified individually rather than accepted automatically. The corrected runtime build is ready for the first controlled capture.
 
 ## Run protocol after review
 
