@@ -39,6 +39,14 @@ These provide scheduler/ReadyThread/CSwitch/SampledProfile/DPC/ISR/DiskIO plus D
 
 FileIO.Light is deliberately omitted from the first broad run to reduce overhead.
 
+## Tool location / temporary elevation staging
+
+Canonical tooling lives in the PrismRE workspace on F:.
+
+The elevated runtime does not rely on that mapped drive being visible after UAC. Before elevation, the launcher stages only itself and PresentMon into a unique directory under `%TEMP%`, then removes that staging after completion.
+
+No persistent Clevo trace-tool directory is required.
+
 ## One-click launcher
 
 The current launcher:
