@@ -2,7 +2,7 @@
 
 Public investigation into recurring frame-time spikes and visible stutter in **Euro Truck Simulator 2 1.61**.
 
-The goal is not to collect random tweak lists. The goal is to reduce the problem to a reproducible runtime path using frame-time telemetry, static binary comparison, call-graph reconstruction and targeted instrumentation.
+The goal is not to collect random tweak lists. The goal is to reduce the problem to reproducible engine behavior using frame-time telemetry, static binary comparison, call-graph reconstruction and targeted instrumentation.
 
 ## Status
 
@@ -13,79 +13,143 @@ Current target:
 - ETS2: `1.61.1.1`
 - revision: `6949e633e77902f7e023819d3131cc6ccce3707f`
 - EXE SHA-256: `EB17944139BE4DE3D70D0CD57CDAA7C52C9E326ECF2D0DD3EA2F806545C74A53`
-- renderer used for the current investigation: DX12
-- telemetry: public SCS telemetry logger + exact-build runtime probe
+- renderer: DX12
+- baseline telemetry: `NemoFrameLogger`
 
-The investigation was restarted on 1.61 after an earlier 1.60 study localized a significant render-queue / descriptor-related path. The 1.60 addresses are used only as structural anchors; they are never reused blindly in 1.61.
+The 1.60 investigation is used only as historical structural evidence. No 1.60 address is assumed valid in 1.61.
 
 ## What is already established
 
-1. The visible stutter is not explained only by ProMods. Vanilla 1.61 also produces recurring frame-time spikes.
-2. DX12 plus `t_averaging_window_duration=200` and `t_averaging_window_length=500` reduced some large spikes, but did not eliminate the perceived hitching.
-3. The in-game `t_limit_fps=55` test did not actually hold the game at a stable 55 FPS and did not solve the issue.
-4. Static 1.60 -> 1.61 mapping shows that the lower half of the previously identified render path survived with strong structural similarity.
-5. The upper `RG_CORE / T1` region changed substantially in 1.61 and appears to have been refactored or merged into larger functions.
-6. A new exact-build chain probe has been built to measure the whole candidate path in one runtime session instead of iterating through dozens of single-hook experiments.
+1. Visible stutter occurs in vanilla 1.61 as well as with ProMods.
+2. DX12 plus `t_averaging_window_duration=200` and `t_averaging_window_length=500` reduced some large spikes but did not eliminate the hitching.
+3. The tested in-game `t_limit_fps=55` configuration did not actually hold a stable 55 FPS and did not solve the symptom.
+4. Static 1.60 -> 1.61 mapping strongly preserves a lower render-queue / descriptor-related region.
+5. A separate upper synchronization/render-owner region is also structurally credible.
+6. **The direct relationship between those two regions is not yet proven.**
 
-## Current 1.61 candidate chain
+That sixth point is an important correction to the initial public write-up.
+
+## Current 1.61 evidence map
+
+### Upper region — verified direct edges
 
 ```text
 main loop
-  1401CBEE0
-      |
+1401CBEE0
+    |
+    v
 render/present coordinator
-  1401DBCE0
-      |
-RG owner candidate
-  140227140
-      |
-T1-like helper
-  140226960
-      |
-substantive nested winner
-  141473E60
-      |
-RQ_ONE
-  14160D010
-      |
-HEAD_DISPATCH
-  14160D580
-      |
-downstream dispatch
-  1402E5FF0
-      |
-BUNDLE_BUILD
-  1402E5040
-      |
-DX12 descriptor builder
-  14029F9B0
+1401DBCE0
+    |
+    v
+RG-owner candidate
+140227140
+    |
+    v
+T1-like candidate
+140226960
 ```
 
-The lower section is strongly mapped from 1.60 by normalized pseudocode, function size and call-graph structure. The `RG owner / T1-like` pair is deliberately labeled more cautiously: it is structurally compelling, but runtime correlation is still required.
+The local topology is real:
+
+```text
+1401DBCE0 -> 140227140
+140227140 -> 140226960
+```
+
+The semantic labels `RG-owner candidate` and `T1-like candidate` remain hypotheses.
+
+### Lower region — strong remap from 1.60
+
+```text
+substantive nested winner
+141473E60
+    |
+    v
+RQ_ONE
+14160D010
+    |
+    v
+HEAD_DISPATCH
+14160D580
+    |
+    v
+downstream dispatch
+1402E5FF0
+    |
+    v
+BUNDLE_BUILD
+1402E5040
+
+DX12 descriptor builder
+14029F9B0
+```
+
+The strongest direct lower edges include:
+
+```text
+141473E60 -> 14160D010 -> 14160D580 -> 1402E5FF0
+```
+
+## Unresolved middle
+
+A direct-call search over the harvested 1.61 call graph found **no path from `140226960` to `141473E60` through depth 12**.
+
+Therefore the following must **not** be presented as a verified chain:
+
+```text
+140226960 -> ... -> 141473E60
+```
+
+Possible explanations still under investigation:
+
+- indirect call;
+- function pointer / vtable dispatch;
+- callback;
+- queue or work submission;
+- a different relationship entirely.
+
+The project now treats the upper and lower regions as two separate evidence islands until that gap is resolved.
+
+## Instrumentation status
+
+`NemoFrameLogger` remains the low-risk baseline logger through the public SCS telemetry API.
+
+`NemoChainProbe161 v0.1` was built as an exact-build inline-hook profiler, but it is currently **experimental / HOLD** rather than the recommended decisive next run.
+
+Why:
+
+- the upper/lower path is not proven;
+- its current output uses cumulative max values;
+- probe and frame windows are not explicitly QPC-aligned;
+- every-N sampling may miss a rare long call;
+- shared atomics can contribute observer effect.
+
+See:
+`docs/nemo-chain-probe-161.md`
+
+## Current next step
+
+The next high-information stage is:
+
+1. investigate the unresolved indirect/callback/work-queue relationship around the upper region;
+2. revise probe telemetry to interval/QPC-aligned semantics;
+3. collect one broad ETW/WPA + PresentMon/GPU trace to distinguish:
+   - CPU render work;
+   - worker-thread synchronization/waits;
+   - GPU/present blocking;
+   - file I/O / asset streaming;
+   - driver/OS scheduling.
+
+Only if broad evidence points back into the mapped render region should narrower hook instrumentation continue.
 
 ## Repository layout
 
 - `docs/target-build.md` — exact build and reproducibility anchors
 - `docs/runtime-baselines.md` — vanilla / ProMods / limiter measurements
-- `docs/static-diff-1.60-to-1.61.md` — binary mapping and current function map
-- `docs/nemo-chain-probe-161.md` — design and safety model of the runtime probe
-- `src/NemoChainProbe161.cpp` — source for the current exact-build probe
-
-## What happens next
-
-One short driving session is recorded with both:
-
-- `NemoFrameLogger` — 5-second frame-time windows
-- `NemoChainProbe161` — sampled timing for the candidate render chain
-
-The two logs are then correlated by time. That should distinguish between:
-
-- cost already present at the RG owner,
-- cost introduced by the T1 branch,
-- cost appearing in the render-queue / bundle / descriptor path,
-- or a stall outside this chain entirely.
-
-If the last case occurs, the investigation moves away from this path instead of continuing to add hooks to the same hypothesis.
+- `docs/static-diff-1.60-to-1.61.md` — binary mapping and corrected evidence map
+- `docs/nemo-chain-probe-161.md` — v0.1 probe design, limitations and current HOLD status
+- `src/NemoChainProbe161.cpp` — experimental v0.1 probe source
 
 ## Scope / repository policy
 
@@ -93,10 +157,10 @@ This repository contains original instrumentation source, measurements, hashes, 
 
 It does **not** contain:
 
-- the ETS2 executable,
-- DLC or map assets,
-- ProMods files,
-- full decompiler dumps,
+- the ETS2 executable;
+- DLC or map assets;
+- ProMods files;
+- full decompiler dumps;
 - redistributed proprietary game code.
 
 All addresses and signatures are pinned to the exact target build above.
