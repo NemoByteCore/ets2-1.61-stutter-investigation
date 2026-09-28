@@ -53,7 +53,7 @@ The earlier direct-call BFS failure remains valid because the middle is an indir
 Current runtime build:
 
 - size: `58,880` bytes
-- SHA-256: `474C9C6925E7B5C486E267CBA03332F5801A3845247E3D188C5707C2020054E2`
+- SHA-256: `C71C659DDD1A6A1C852C692C945C5E5CD1BEE9259E80C8DF86D7104290B41CB4`
 
 It adds:
 
@@ -94,9 +94,18 @@ The real capture will therefore be started normally from an elevated session whe
 See:
 `docs/runtime-capture-pipeline.md`
 
+## Pre-runtime ABI correction
+
+A source/assembly cross-check found one real wrapper declaration bug: the first argument of `RQ_ONE 14160D010` was declared as 32-bit even though the function preserves and dereferences full RCX as a 64-bit object address.
+
+The wrapper was changed from `uint32_t` to `uint64_t`, rebuilt and verified in disassembly before deployment.
+
+Current ChainProbe SHA-256:
+`C71C659DDD1A6A1C852C692C945C5E5CD1BEE9259E80C8DF86D7104290B41CB4`
+
 ## Current next step
 
-One short controlled driving session with the existing instrumentation and broad trace.
+One short controlled driving session with the corrected instrumentation and broad trace.
 
 No further static remapping or graphics/config changes are required before that run.
 
