@@ -6,10 +6,9 @@
 
 **HOLD / experimental. Do not treat v0.1 as the recommended decisive next run.**
 
-The DLL was built successfully and validated as a loadable plugin artifact, but two classes of limitations were identified after the first design pass:
+The DLL was built successfully and validated as a loadable plugin artifact.
 
-1. the upper and lower static regions are not yet proven to form one continuous call chain;
-2. the v0.1 telemetry format is weaker than needed for clean frame-window correlation.
+The static upper-to-lower relationship has since been recovered through an indirect adapter/vtable path. The remaining HOLD status is about measurement quality: v0.1 telemetry is weaker than needed for clean frame-window correlation and may introduce observer effect.
 
 The source remains public because it is useful as an exact-build instrumentation artifact and documents the current hypothesis. Its limitations are part of the investigation.
 
@@ -28,23 +27,23 @@ The source remains public because it is useful as an exact-build instrumentation
 
 Important: the hook list spans **two evidence regions**. It must not be interpreted as proof that every entry belongs to one direct runtime chain.
 
-## Static evidence split
+## Static chain status
 
-Upper direct region:
-
-```text
-1401DBCE0 -> 140227140 -> 140226960
-```
-
-Lower region:
+The direct upper and lower regions are now connected through an indirect adapter path:
 
 ```text
-141473E60 -> 14160D010 -> 14160D580 -> 1402E5FF0
+140226960
+ -> [owner+0x1C68]
+ -> adapter 1421FD1B0 +8
+ -> 14022EAA0
+ -> contained callback 1423F5530 +8
+ -> 141476140
+ -> 141473E60
 ```
 
-A direct-call BFS found no path from `140226960` to `141473E60` through depth 12.
+The earlier direct-call BFS failure remains correct; the bridge is not represented by ordinary direct-call edges.
 
-Possible indirect/callback/work-queue relationships remain under investigation.
+Therefore the hook set now spans one statically recovered relationship, although runtime timing/correlation still needs validation.
 
 ## v0.1 output
 
@@ -158,9 +157,10 @@ That test validates the artifact/dependencies, not the ETS-specific hook initial
 
 Before relying on a revised hook probe:
 
-1. investigate indirect/callback/work-queue linkage around the unresolved middle;
-2. collect a broad ETW/WPA + PresentMon/GPU trace;
-3. use that trace to decide whether the dominant spike is:
+1. redesign telemetry around explicit QPC-aligned intervals and per-window maxima;
+2. reduce shared-counter / sampling observer effect where practical;
+3. collect a broad ETW/WPA + PresentMon/GPU trace;
+4. use that trace to decide whether the dominant spike is:
    - CPU render work;
    - synchronization/wait;
    - GPU/present;
