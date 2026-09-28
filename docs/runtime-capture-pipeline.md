@@ -4,32 +4,14 @@ Status: prepared and offline-validated. Runtime capture pending.
 
 ## Goal
 
-The next experiment is designed to distinguish several mechanisms in one short drive instead of creating another sequence of single-hook versions.
+The next experiment combines:
 
-Signals:
-
-- frame-time windows from NemoFrameLogger v3;
-- chain intervals from NemoChainProbe161 v0.2 threaded;
+- NemoFrameLogger v3 frame windows;
+- NemoChainProbe161 v0.2 threaded intervals;
 - PresentMon CPU/GPU/present metrics;
-- Windows ETW scheduler, GPU, driver and disk activity.
-
-## Timing basis
+- Windows ETW scheduler/GPU/driver/disk activity.
 
 All project telemetry now exposes QPC-compatible timing.
-
-NemoFrameLogger v3:
-- `qpc_start`
-- `qpc_end`
-- `qpc_freq`
-
-NemoChainProbe v0.2:
-- QPC interval start/end
-- QPC frequency
-
-PresentMon:
-- `--qpc_time`
-
-This removes the earlier ambiguity caused by independently started approximately five-second windows.
 
 ## PresentMon
 
@@ -54,30 +36,35 @@ GeneralProfile.Light
 GPU.Light
 ```
 
-Memory mode is used during the driving segment.
+These provide scheduler/ReadyThread/CSwitch/SampledProfile/DPC/ISR/DiskIO plus DXGI/DxgKrnl/GPU evidence.
 
-GeneralProfile.Light provides useful evidence including:
+FileIO.Light is deliberately omitted from the first broad run to reduce overhead.
 
-- CSwitch;
-- ReadyThread;
-- SampledProfile;
-- DPC;
-- Interrupt/ISR;
-- DiskIO.
+## Elevation requirement
 
-GPU.Light adds:
+On the current Windows setup, these WPR system-performance profiles require elevation.
 
-- DXGI;
-- DxgKrnl;
-- GPU activity.
+A non-elevated test start returned:
 
-FileIO.Light is deliberately omitted from the first broad run to reduce overhead. If DiskIO correlates with hitches, a later targeted FileIO trace can identify exact files.
+```text
+0xc5585011
+Failed to enable the policy to profile system performance.
+```
+
+The test was performed while ETS was closed.
+
+After the failed test:
+- WPR was not recording;
+- PresentMon was not running;
+- no managed trace was active.
+
+The real capture should therefore be started from a normally elevated session with the machine attended. The project does not attempt to bypass UAC or weaken Windows policy.
 
 ## Run protocol
 
 1. Start ETS normally.
 2. Reach a representative on-road state.
-3. Start the trace.
+3. Start the trace from an elevated session.
 4. Drive until several characteristic hitches are observed.
 5. Exit ETS normally.
 6. Finalize the trace.
@@ -92,26 +79,8 @@ Do not alter graphics/config during the capture.
 - `game.log.txt` containing NemoFrame v3 records;
 - metadata with tool/build hashes.
 
-## Analysis questions
-
-For each hitch window:
-
-1. Did ChainProbe elapsed time rise?
-2. If yes, was the thread executing or waiting/preempted?
-3. Did GPU work/present latency rise at the same QPC interval?
-4. Was there a ReadyThread/CSwitch stall?
-5. Did DPC/ISR activity spike?
-6. Did DiskIO spike?
-
-This should separate:
-- renderer CPU workload;
-- worker synchronization;
-- GPU/present blocking;
-- driver/OS scheduling;
-- storage/streaming.
-
 ## Interpretation rule
 
-No long function-duration sample is treated as proof of CPU work by itself.
+ChainProbe measures sampled elapsed wall time, not guaranteed CPU execution time.
 
-ChainProbe measures elapsed time. ETW scheduling state and PresentMon/GPU data decide what that elapsed time represents.
+ETW scheduling state and PresentMon/GPU data are required before calling a long chain sample a CPU hotspot.
