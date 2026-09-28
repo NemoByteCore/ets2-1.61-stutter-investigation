@@ -141,68 +141,87 @@ Current working semantic labels:
 
 These labels are still hypotheses. The direct relationships are facts.
 
-## Critical correction: the middle is unresolved
+## Direct-call gap explained by indirect dispatch
 
-The initial public write-up drew a continuous candidate chain from `140226960` to `141473E60`.
+The initial public write-up was right to retract the unexplained `...`.
 
-That was too strong.
-
-A direct-call BFS over the harvested 1.61 `calls.tsv` was run with:
-
-- start: `140226960`
-- goal: `141473E60`
-- maximum depth: 12 edges
-
-Result:
+A direct-call BFS still returns:
 
 ```text
 PATH_FOUND=False
 ```
 
-This does **not** prove the two regions are unrelated. It proves only that the harvested direct-call graph does not contain the claimed direct-call path within that search depth.
+for `140226960 -> 141473E60` through depth 12.
 
-Potential missing mechanisms:
+The follow-up static pass recovered the missing architecture.
 
-- indirect call;
-- function pointer;
-- vtable dispatch;
-- callback;
-- queue/work submission;
-- an alternative path.
+### T1-like callsite
 
-## Correct current evidence map
+`140226960` loads the callback from owner field `+0x1C68` and calls vtable slot `+0x8`.
+
+### Adapter
+
+`1414752E0` installs an adapter with vtable:
+
+`1421FD1B0`
+
+into render-queue data `+0x1C68`.
+
+Adapter slot `+0x8` points to `14022EAA0`, which forwards:
 
 ```text
-UPPER DIRECT REGION
+MOV RCX,[RCX+0x110]
+MOV RAX,[RCX]
+JMP [RAX+0x8]
+```
 
+### Contained callback
+
+`141473A00` builds the source callback with vtable:
+
+`1423F5530`
+
+Raw callsite analysis shows that callback wrapper is passed into `1414752E0`.
+
+Source vtable `+0x10` points to `141476150`, which clones the callback while writing the same vtable `1423F5530`.
+
+The clone is stored at adapter `+0x110`.
+
+### Winner
+
+Source/clone vtable slot `+0x8` points to:
+
+`141476140`
+
+which is a thunk:
+
+```text
+JMP 141473E60
+```
+
+### Correct current chain
+
+```text
 1401CBEE0  LOOP
   -> 1401DBCE0  coordinator
       -> 140227140  RG-owner candidate
-          -> 140226960  T1-like candidate
-
-
-UNRESOLVED RELATIONSHIP
-(no direct-call path currently demonstrated)
-
-
-LOWER STRONGLY MAPPED REGION
-
-141473E60  substantive winner
-  -> 14160D010  RQ_ONE
-      -> 14160D580  HEAD_DISPATCH
-          -> 1402E5FF0  downstream
-              -> lower render/descriptor work
+          -> 140226960  T1-like
+              -> [owner+0x1C68]
+              -> adapter 1421FD1B0 +8
+              -> 14022EAA0
+              -> contained callback 1423F5530 +8
+              -> 141476140
+              -> 141473E60  substantive winner
+                  -> 14160D010  RQ_ONE
+                      -> 14160D580  HEAD_DISPATCH
+                          -> 1402E5FF0  downstream
+                              -> lower render/descriptor work
 ```
 
-Do not collapse those two regions into one proven chain until the missing relationship is recovered.
+The earlier negative direct-call result remains useful: it explains why the automatic call graph could not recover this middle section.
 
 ## Implication for runtime work
 
-The purpose of future tracing is no longer "confirm the full chain."
-
-It is to answer two independent questions:
-
-1. what mechanism, if any, connects the upper synchronization region to the lower render region?
-2. which subsystem actually coincides with the visible frame spike?
+The static chain is now recovered. Future tracing should answer which part of that chain, if any, actually coincides with the visible frame spike, and whether elapsed time represents CPU work, synchronization/waiting, GPU/present blocking or an external stall.
 
 That is why the project is moving toward broader ETW/Present/GPU evidence before another long sequence of narrow hook versions.
