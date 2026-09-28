@@ -1,16 +1,36 @@
 # NemoChainProbe161
 
-`NemoChainProbe161 v0.1` is an exact-build experimental inline-hook profiler built for ETS2 1.61.1.1.
+`NemoChainProbe161` is an exact-build inline-hook profiler for the current ETS2 1.61 candidate render chain.
 
 ## Current status
 
-**HOLD / experimental. Do not treat v0.1 as the recommended decisive next run.**
+The original public source in `src/NemoChainProbe161.cpp` is the historical v0.1 design.
 
-The DLL was built successfully and validated as a loadable plugin artifact.
+The current runtime build is **v0.2 threaded**.
 
-The static upper-to-lower relationship has since been recovered through an indirect adapter/vtable path. The remaining HOLD status is about measurement quality: v0.1 telemetry is weaker than needed for clean frame-window correlation and may introduce observer effect.
+v0.1 should not be used as the decisive correlation build.
 
-The source remains public because it is useful as an exact-build instrumentation artifact and documents the current hypothesis. Its limitations are part of the investigation.
+## Static chain
+
+The recovered 1.61 relationship is:
+
+```text
+1401CBEE0
+ -> 1401DBCE0
+ -> 140227140
+ -> 140226960
+ -> [owner+0x1C68]
+ -> adapter 1421FD1B0 +0x8
+ -> 14022EAA0
+ -> contained callback 1423F5530 +0x8
+ -> 141476140
+ -> 141473E60
+ -> 14160D010
+ -> 14160D580
+ -> 1402E5FF0
+```
+
+The middle is an indirect vtable/adapter dispatch. That is why a normal direct-call BFS could not connect `140226960` to `141473E60`.
 
 ## Hook set
 
@@ -25,146 +45,90 @@ The source remains public because it is useful as an exact-build instrumentation
 | BUNDLE_BUILD | `1402E5040` | 1 / 64 |
 | DX12 descriptor builder | `14029F9B0` | 1 / 64 |
 
-Important: the hook list spans **two evidence regions**. It must not be interpreted as proof that every entry belongs to one direct runtime chain.
+## v0.1 problems
 
-## Static chain status
+v0.1 emitted cumulative values every approximately five seconds.
 
-The direct upper and lower regions are now connected through an indirect adapter path:
+Useful totals could be differenced, but cumulative maximum made it impossible to identify the interval in which a long call actually happened.
 
-```text
-140226960
- -> [owner+0x1C68]
- -> adapter 1421FD1B0 +8
- -> 14022EAA0
- -> contained callback 1423F5530 +8
- -> 141476140
- -> 141473E60
-```
+Its report path also ran from the RG wrapper, creating avoidable observer-effect risk.
 
-The earlier direct-call BFS failure remains correct; the bridge is not represented by ordinary direct-call edges.
+## v0.2 threaded changes
 
-Therefore the hook set now spans one statically recovered relationship, although runtime timing/correlation still needs validation.
+Current build:
 
-## v0.1 output
+- size: `58,880` bytes
+- SHA-256: `474C9C6925E7B5C486E267CBA03332F5801A3845247E3D188C5707C2020054E2`
 
-The plugin writes:
+Changes:
 
-```text
-bin/win_x64/plugins/NemoChainProbe161.csv
-```
+- QPC interval start/end;
+- interval call deltas;
+- interval sampled-call deltas;
+- interval sampled duration;
+- interval maximum;
+- sampled-duration buckets >=1/2/4/8/16/33 ms;
+- stat structures isolated to separate cache lines;
+- reporting moved to a dedicated low-frequency reporter thread;
+- RG hot path no longer performs report/CSV I/O;
+- exact-build PE/signature validation retained.
 
-Rows are cumulative and emitted approximately every five seconds.
+Offline validation:
 
-For each target v0.1 records:
+- `LoadLibrary`: OK
+- `scs_telemetry_init`: exported
+- `scs_telemetry_shutdown`: exported
 
-- total calls;
-- sampled calls;
-- cumulative sampled microseconds;
-- cumulative maximum sampled call duration.
+## Safety model
 
-## Why v0.1 telemetry is insufficient for a decisive correlation
+Before installing any hook the build validates:
 
-Cumulative totals can be differenced between rows.
+- PE timestamp `0x6AB3C451`;
+- SizeOfImage `0x0398A000`;
+- exact prologue bytes for all eight targets.
 
-Cumulative maximum cannot identify the interval in which the long call occurred. Once a large max has happened, later rows retain it.
+A mismatch fails closed.
 
-The probe and `NemoFrameLogger` also create their ~5-second rows independently, without an explicit shared QPC interval boundary.
+Partial hook installation failure restores already patched entries.
 
-Every-N sampling can additionally miss a rare single long call.
+Normal shutdown restores original prologue bytes.
 
-Therefore v0.1 data could be suggestive, but should not be used for a strong statement such as:
+## Remaining interpretation caveat
 
-> the 33 ms frame spike in window N was caused by target X
+The probe records sampled **elapsed wall time**.
 
-without additional alignment evidence.
+A long sample can mean:
 
-## Required telemetry direction before decisive use
+- CPU execution;
+- lock/wait time;
+- scheduler preemption;
+- a combination of those.
 
-Preferred next format:
+Therefore a long ChainProbe sample should not automatically be called a CPU hotspot.
 
-- explicit QPC window start;
-- explicit QPC window end;
-- per-interval call delta;
-- per-interval sampled count;
-- per-interval sampled time;
-- per-interval max;
-- duration buckets/histogram where practical;
-- thread ID for exceptional long calls where useful.
+The planned WPR/PresentMon capture exists specifically to distinguish those cases.
 
-The project should also reduce shared-counter contention where practical because global atomics can contribute observer effect/false sharing.
+## Runtime correlation
 
-## Runtime safety model
+The matching FrameLogger v3 emits QPC start/end/frequency for its frame windows.
 
-This is an inline-hook profiler and is more invasive than the public SCS telemetry logger.
+PresentMon is also configured to emit QPC time.
 
-It is fail-closed against the exact target build.
+That allows direct overlap against ChainProbe intervals rather than matching independent five-second windows by sequence number.
 
-Before installing any hook v0.1 verifies:
+## Next experiment
 
-- PE timestamp: `0x6AB3C451`
-- SizeOfImage: `0x0398A000`
-- exact prologue bytes for all eight targets
+Use one combined run with:
 
-If any check fails, no hooks are installed.
+- ChainProbe v0.2 threaded;
+- NemoFrameLogger v3;
+- PresentMon 2.6.0;
+- WPR GeneralProfile.Light + GPU.Light.
 
-On partial installation failure, already installed hooks are restored.
+Then correlate chain timing against:
 
-On normal telemetry shutdown, original prologue bytes are restored.
-
-## Trampoline constraints
-
-The simple trampoline is only appropriate when the copied prologue is relocation-safe.
-
-For the selected v0.1 targets the hook lengths were chosen on instruction boundaries and the copied sequences were inspected for problematic early relative/RIP-sensitive instructions.
-
-LOOP/COORD were intentionally not hooked with this mechanism because their early instruction sequences were less suitable.
-
-This does not eliminate all risk:
-- recovered ABI can still be wrong;
-- stack/XMM arguments can be misunderstood;
-- scheduler preemption can make wall-time duration look like function work;
-- concurrent patching is not inherently atomic.
-
-## What the probe does not intentionally change
-
-It does not intentionally modify:
-
-- rendering settings;
-- traffic;
-- physics;
-- map state;
-- resource selection;
-- descriptor contents;
-- pacing cvars.
-
-The wrappers time original calls and return through the original execution path.
-
-## Build artifact
-
-First local build:
-
-- size: `54,272` bytes
-- SHA-256: `A8FFB4254F77BDF1ADEAC9BBCA9021B0253AD866235D373AC856809B7F9A3A17`
-
-A `LoadLibrary` self-check confirmed the DLL loads and exports:
-
-- `scs_telemetry_init`
-- `scs_telemetry_shutdown`
-
-That test validates the artifact/dependencies, not the ETS-specific hook initialization.
-
-## Recommended next stage
-
-Before relying on a revised hook probe:
-
-1. redesign telemetry around explicit QPC-aligned intervals and per-window maxima;
-2. reduce shared-counter / sampling observer effect where practical;
-3. collect a broad ETW/WPA + PresentMon/GPU trace;
-4. use that trace to decide whether the dominant spike is:
-   - CPU render work;
-   - synchronization/wait;
-   - GPU/present;
-   - file I/O/asset streaming;
-   - driver/OS scheduling.
-
-If broad tracing points back into these regions, a revised QPC-aligned probe becomes the next focused instrument.
+- frame-time spikes;
+- ReadyThread/CSwitch scheduling;
+- GPU/present behavior;
+- DPC/ISR;
+- DiskIO.
