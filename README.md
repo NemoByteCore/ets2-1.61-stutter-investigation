@@ -25,7 +25,7 @@ The 1.60 investigation is used only as historical structural evidence. No 1.60 a
 3. The tested in-game `t_limit_fps=55` configuration did not actually hold a stable 55 FPS and did not solve the symptom.
 4. Static 1.60 -> 1.61 mapping strongly preserves a lower render-queue / descriptor-related region.
 5. A separate upper synchronization/render-owner region is also structurally credible.
-6. **The direct relationship between those two regions is not yet proven.**
+6. The upper and lower regions are now statically connected through an indirect adapter/vtable dispatch.
 
 That sixth point is an important correction to the initial public write-up.
 
@@ -91,25 +91,26 @@ The strongest direct lower edges include:
 141473E60 -> 14160D010 -> 14160D580 -> 1402E5FF0
 ```
 
-## Unresolved middle
+## Recovered indirect middle
 
-A direct-call search over the harvested 1.61 call graph found **no path from `140226960` to `141473E60` through depth 12**.
+A normal direct-call search still finds no path from `140226960` to `141473E60`.
 
-Therefore the following must **not** be presented as a verified chain:
+The missing relationship is indirect:
 
 ```text
-140226960 -> ... -> 141473E60
+140226960
+  -> callback at owner +0x1C68
+  -> adapter vtable 1421FD1B0 +0x8
+  -> 14022EAA0 forwarding thunk
+  -> contained callback at adapter +0x110
+  -> callback vtable 1423F5530 +0x8
+  -> 141476140
+  -> JMP 141473E60
 ```
 
-Possible explanations still under investigation:
+Construction analysis shows `141473A00` creates the source callback, `1414752E0` clones it through source-vtable `+0x10`, stores the clone at adapter `+0x110`, and stores the adapter at render-queue data `+0x1C68`.
 
-- indirect call;
-- function pointer / vtable dispatch;
-- callback;
-- queue or work submission;
-- a different relationship entirely.
-
-The project now treats the upper and lower regions as two separate evidence islands until that gap is resolved.
+This explains why the harvested direct-call graph could not connect the regions.
 
 ## Instrumentation status
 
@@ -119,7 +120,7 @@ The project now treats the upper and lower regions as two separate evidence isla
 
 Why:
 
-- the upper/lower path is not proven;
+- the static chain is now recovered, but the current probe format is still not clean enough for decisive correlation;
 - its current output uses cumulative max values;
 - probe and frame windows are not explicitly QPC-aligned;
 - every-N sampling may miss a rare long call;
@@ -132,8 +133,8 @@ See:
 
 The next high-information stage is:
 
-1. investigate the unresolved indirect/callback/work-queue relationship around the upper region;
-2. revise probe telemetry to interval/QPC-aligned semantics;
+1. revise probe telemetry to interval/QPC-aligned semantics;
+2. reduce probe observer effect where practical;
 3. collect one broad ETW/WPA + PresentMon/GPU trace to distinguish:
    - CPU render work;
    - worker-thread synchronization/waits;
