@@ -1,17 +1,16 @@
 # Runtime capture pipeline
 
-Status: prepared and offline-validated. Runtime capture pending.
+Status: one-click launcher prepared and elevation path validated. Runtime capture pending external review.
 
 ## Goal
 
 The next experiment combines:
-
 - NemoFrameLogger v3 frame windows;
 - NemoChainProbe161 v0.2 threaded intervals;
 - PresentMon CPU/GPU/present metrics;
 - Windows ETW scheduler/GPU/driver/disk activity.
 
-All project telemetry now exposes QPC-compatible timing.
+All project telemetry exposes QPC-compatible timing.
 
 ## PresentMon
 
@@ -40,44 +39,49 @@ These provide scheduler/ReadyThread/CSwitch/SampledProfile/DPC/ISR/DiskIO plus D
 
 FileIO.Light is deliberately omitted from the first broad run to reduce overhead.
 
-## Elevation requirement
+## One-click launcher
 
-On the current Windows setup, these WPR system-performance profiles require elevation.
+The current launcher:
+- self-elevates through normal Windows UAC;
+- verifies exact runtime-tool hashes;
+- refuses to interfere with an existing WPR session;
+- launches ETS2 through Steam;
+- waits for the game process;
+- waits for fresh NemoFrame gameplay-start telemetry in the current game.log;
+- starts WPR + PresentMon only after gameplay telemetry begins;
+- waits for ETS exit;
+- finalizes WPR/PresentMon automatically;
+- collects project logs into a timestamped trace directory.
 
-A non-elevated test start returned:
+The launcher has a `-SelfTestOnly` mode.
 
-```text
-0xc5585011
-Failed to enable the policy to profile system performance.
-```
+That self-test was executed successfully:
+- UAC elevation succeeded;
+- WPR GeneralProfile.Light + GPU.Light started;
+- WPR cancellation succeeded;
+- final WPR status was idle;
+- ETS2 was not launched.
 
-The test was performed while ETS was closed.
+## Current gate
 
-After the failed test:
-- WPR was not recording;
-- PresentMon was not running;
-- no managed trace was active.
+Before the first real runtime capture, the v0.2 probe, FrameLogger v3 and launcher/fallback scripts are being subjected to one additional adversarial source review.
 
-The real capture should therefore be started from a normally elevated session with the machine attended. The project does not attempt to bypass UAC or weaken Windows policy.
+The purpose is to catch:
+- ABI/wrapper mistakes;
+- trampoline hazards;
+- telemetry races/observer effect;
+- launcher cleanup failures;
+- capture-methodology blind spots.
 
-## Run protocol
+## Run protocol after review
 
-1. Start ETS normally.
-2. Reach a representative on-road state.
-3. Start the trace from an elevated session.
-4. Drive until several characteristic hitches are observed.
-5. Exit ETS normally.
-6. Finalize the trace.
+1. launch the one-click tool;
+2. approve normal UAC;
+3. drive until several characteristic hitches occur;
+4. exit ETS normally;
+5. launcher finalizes the capture automatically.
 
-Do not alter graphics/config during the capture.
-
-## Expected capture bundle
-
-- PresentMon CSV;
-- WPR ETL;
-- NemoChainProbe v0.2 CSV;
-- `game.log.txt` containing NemoFrame v3 records;
-- metadata with tool/build hashes.
+No manual START/STOP should be required in the normal path.
 
 ## Interpretation rule
 
