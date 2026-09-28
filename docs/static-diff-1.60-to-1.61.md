@@ -11,18 +11,18 @@ The same Ghidra harvester format was generated for both builds.
 | 1.60 corpus | 68,834 |
 | 1.61.1.1 | 70,694 |
 
-A normalized pseudocode fingerprint pass found only 118 unique exact matches, all at the same addresses. That is intentionally not enough to drive the port.
+A normalized pseudocode fingerprint pass found only 118 unique exact matches, all at the same addresses. That is not enough by itself to drive a port.
 
-The useful mapping came from a combination of:
+Useful mapping came from a combination of:
 
-- normalized pseudocode similarity,
-- function size,
-- call degree,
-- external-call similarity,
-- direct caller/callee structure,
+- normalized pseudocode similarity;
+- function size;
+- call degree;
+- external-call similarity;
+- direct caller/callee structure;
 - instruction-level validation in the 1.61 Ghidra project.
 
-## High-confidence lower-chain mapping
+## High-confidence lower-region mapping
 
 | 1.60 role | 1.60 VA | 1.61 VA | Auto score | Notes |
 |---|---:|---:|---:|---|
@@ -40,7 +40,7 @@ The useful mapping came from a combination of:
 | uniform merge helper | `14144C160` | `141508B30` | 0.9490 | same size |
 | uniform/resource context setup | `14144C770` | `141509140` | 0.9557 | same size |
 
-The important lower runtime sequence is also preserved by direct call-graph edges:
+Preserved direct lower edges:
 
 ```text
 141473E60
@@ -49,7 +49,7 @@ The important lower runtime sequence is also preserved by direct call-graph edge
             -> 1402E5FF0
 ```
 
-This is substantially stronger evidence than text similarity alone.
+That is substantially stronger evidence than text similarity alone.
 
 ## Main loop / coordinator mapping
 
@@ -61,19 +61,16 @@ This is substantially stronger evidence than text similarity alone.
 | render/present coordinator | `1401D72F0` | `1401DBCE0` | 0.6947 |
 | WAIT helper | `14011F730` | `140123E50` | 0.9123 |
 
-The 1.61 loop directly calls the mapped coordinator:
+Verified local edges include:
 
 ```text
 1401CBEE0 -> 1401DBCE0
-```
-
-The mapped coordinator also calls the mapped WAIT helper:
-
-```text
 1401DBCE0 -> 140123E50
 ```
 
-## Important correction: RG_CORE / T1
+The coordinator match is weaker than the LOOP/WAIT matches, so its semantic label should remain evidence-backed but cautious.
+
+## RG_CORE / T1 reconstruction
 
 The global fuzzy matcher initially proposed:
 
@@ -82,9 +79,9 @@ old RG_CORE 14021FE20 -> 14134F3D0   score 0.5657, margin 0.0167
 old T1      14021F560 -> 1415C5B90   score 0.6022, margin 0.0306
 ```
 
-Those scores and margins are too weak to accept.
+Those candidates were rejected as too weak.
 
-Instead, the mapping was reconstructed from the already mapped coordinator and local call structure.
+The branch was then reconstructed locally from the mapped coordinator.
 
 ### Old 1.60 shape
 
@@ -94,13 +91,13 @@ coordinator
        -> T1 14021F560 (538 bytes)
 ```
 
-Old T1 had five ordinary children, including functions sized:
+Old T1 had five ordinary children sized approximately:
 
 ```text
 87, 157, 305, 214, 300 bytes
 ```
 
-### 1.61 structural candidate
+### 1.61 local topology
 
 The mapped 1.61 coordinator directly calls:
 
@@ -108,7 +105,7 @@ The mapped 1.61 coordinator directly calls:
 140227140 (4259 bytes)
 ```
 
-This function preserves the characteristic synchronization shape:
+This function contains the characteristic synchronization behavior involving:
 
 - `AcquireSRWLockExclusive`
 - `ReleaseSRWLockExclusive`
@@ -127,31 +124,85 @@ That function has five ordinary children sized:
 157, 217, 214, 305, 300 bytes
 ```
 
-Four child sizes line up almost exactly with the old T1 subtree, while one branch is enlarged.
+Four child sizes line up closely with the old T1 subtree.
 
-Current working labels are therefore:
+The direct harvested topology is:
 
 ```text
-140227140 = RG owner candidate
-140226960 = T1-like helper
+1401DBCE0 -> 140227140 -> 140226960
 ```
 
-These are stronger than the original global fuzzy candidates, but the labels remain hypotheses until runtime correlation confirms where the spike cost appears.
-
-## Current working chain
+Current working semantic labels:
 
 ```text
+140227140 = RG-owner candidate
+140226960 = T1-like candidate
+```
+
+These labels are still hypotheses. The direct relationships are facts.
+
+## Critical correction: the middle is unresolved
+
+The initial public write-up drew a continuous candidate chain from `140226960` to `141473E60`.
+
+That was too strong.
+
+A direct-call BFS over the harvested 1.61 `calls.tsv` was run with:
+
+- start: `140226960`
+- goal: `141473E60`
+- maximum depth: 12 edges
+
+Result:
+
+```text
+PATH_FOUND=False
+```
+
+This does **not** prove the two regions are unrelated. It proves only that the harvested direct-call graph does not contain the claimed direct-call path within that search depth.
+
+Potential missing mechanisms:
+
+- indirect call;
+- function pointer;
+- vtable dispatch;
+- callback;
+- queue/work submission;
+- an alternative path.
+
+## Correct current evidence map
+
+```text
+UPPER DIRECT REGION
+
 1401CBEE0  LOOP
-  -> 1401DBCE0  render/present coordinator
-      -> 140227140  RG owner candidate
-          -> 140226960  T1-like
-              -> ...
-                  -> 141473E60  substantive winner
-                      -> 14160D010  RQ_ONE
-                          -> 14160D580  HEAD_DISPATCH
-                              -> 1402E5FF0  downstream
-                                  -> 1402E5040  BUNDLE_BUILD
-                                      -> 14029F9B0  descriptor builder
+  -> 1401DBCE0  coordinator
+      -> 140227140  RG-owner candidate
+          -> 140226960  T1-like candidate
+
+
+UNRESOLVED RELATIONSHIP
+(no direct-call path currently demonstrated)
+
+
+LOWER STRONGLY MAPPED REGION
+
+141473E60  substantive winner
+  -> 14160D010  RQ_ONE
+      -> 14160D580  HEAD_DISPATCH
+          -> 1402E5FF0  downstream
+              -> lower render/descriptor work
 ```
 
-The purpose of the runtime probe is to test this chain as one hypothesis, not to declare it the root cause in advance.
+Do not collapse those two regions into one proven chain until the missing relationship is recovered.
+
+## Implication for runtime work
+
+The purpose of future tracing is no longer "confirm the full chain."
+
+It is to answer two independent questions:
+
+1. what mechanism, if any, connects the upper synchronization region to the lower render region?
+2. which subsystem actually coincides with the visible frame spike?
+
+That is why the project is moving toward broader ETW/Present/GPU evidence before another long sequence of narrow hook versions.
