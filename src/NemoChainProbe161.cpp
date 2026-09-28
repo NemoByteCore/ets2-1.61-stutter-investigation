@@ -1,4 +1,9 @@
 // NemoChainProbe161.cpp
+// EXPERIMENTAL v0.1 — HOLD as a decisive runtime probe.
+// The upper 140227140 -> 140226960 region and lower 141473E60 -> ... region
+// are not yet proven to form one continuous direct-call chain.
+// v0.1 telemetry also uses cumulative max and independently timed ~5 s rows.
+// See docs/nemo-chain-probe-161.md before using this source.
 // Exact-build chain profiler for ETS2 1.61.1.1 rev 6949e633e77902f7e023819d3131cc6ccce3707f
 // EXE SHA256: EB17944139BE4DE3D70D0CD57CDAA7C52C9E326ECF2D0DD3EA2F806545C74A53
 // Fail-closed: PE timestamp + SizeOfImage + exact prologs for every hook.
