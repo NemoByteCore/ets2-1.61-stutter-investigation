@@ -1,17 +1,24 @@
 # NemoChainProbe161
 
-`NemoChainProbe161` is an exact-build runtime profiler for the current ETS2 1.61 candidate chain.
+`NemoChainProbe161 v0.1` is an exact-build experimental inline-hook profiler built for ETS2 1.61.1.1.
 
-It exists to answer one question in a single driving session:
+## Current status
 
-> At what level of the mapped render path does the frame-time spike become expensive?
+**HOLD / experimental. Do not treat v0.1 as the recommended decisive next run.**
 
-## Hooks
+The DLL was built successfully and validated as a loadable plugin artifact, but two classes of limitations were identified after the first design pass:
+
+1. the upper and lower static regions are not yet proven to form one continuous call chain;
+2. the v0.1 telemetry format is weaker than needed for clean frame-window correlation.
+
+The source remains public because it is useful as an exact-build instrumentation artifact and documents the current hypothesis. Its limitations are part of the investigation.
+
+## Hook set
 
 | Label | VA | Sampling |
 |---|---:|---:|
-| RG owner candidate | `140227140` | 1 / 1 |
-| T1-like helper | `140226960` | 1 / 8 |
+| RG-owner candidate | `140227140` | 1 / 1 |
+| T1-like candidate | `140226960` | 1 / 8 |
 | nested winner | `141473E60` | 1 / 16 |
 | RQ_ONE | `14160D010` | 1 / 16 |
 | HEAD_DISPATCH | `14160D580` | 1 / 16 |
@@ -19,9 +26,27 @@ It exists to answer one question in a single driving session:
 | BUNDLE_BUILD | `1402E5040` | 1 / 64 |
 | DX12 descriptor builder | `14029F9B0` | 1 / 64 |
 
-The increasingly aggressive sampling is intentional. The lower functions can be hot enough that timing every invocation would risk making the profiler part of the problem being measured.
+Important: the hook list spans **two evidence regions**. It must not be interpreted as proof that every entry belongs to one direct runtime chain.
 
-## Output
+## Static evidence split
+
+Upper direct region:
+
+```text
+1401DBCE0 -> 140227140 -> 140226960
+```
+
+Lower region:
+
+```text
+141473E60 -> 14160D010 -> 14160D580 -> 1402E5FF0
+```
+
+A direct-call BFS found no path from `140226960` to `141473E60` through depth 12.
+
+Possible indirect/callback/work-queue relationships remain under investigation.
+
+## v0.1 output
 
 The plugin writes:
 
@@ -31,85 +56,115 @@ bin/win_x64/plugins/NemoChainProbe161.csv
 
 Rows are cumulative and emitted approximately every five seconds.
 
-For each target the CSV records:
+For each target v0.1 records:
 
-- total calls,
-- sampled calls,
-- cumulative sampled microseconds,
-- maximum sampled call duration.
+- total calls;
+- sampled calls;
+- cumulative sampled microseconds;
+- cumulative maximum sampled call duration.
 
-The sampled total is **not** automatically multiplied by the sampling divisor. Analysis should use deltas and the sample count rather than treating it as exact whole-program CPU time.
+## Why v0.1 telemetry is insufficient for a decisive correlation
+
+Cumulative totals can be differenced between rows.
+
+Cumulative maximum cannot identify the interval in which the long call occurred. Once a large max has happened, later rows retain it.
+
+The probe and `NemoFrameLogger` also create their ~5-second rows independently, without an explicit shared QPC interval boundary.
+
+Every-N sampling can additionally miss a rare single long call.
+
+Therefore v0.1 data could be suggestive, but should not be used for a strong statement such as:
+
+> the 33 ms frame spike in window N was caused by target X
+
+without additional alignment evidence.
+
+## Required telemetry direction before decisive use
+
+Preferred next format:
+
+- explicit QPC window start;
+- explicit QPC window end;
+- per-interval call delta;
+- per-interval sampled count;
+- per-interval sampled time;
+- per-interval max;
+- duration buckets/histogram where practical;
+- thread ID for exceptional long calls where useful.
+
+The project should also reduce shared-counter contention where practical because global atomics can contribute observer effect/false sharing.
 
 ## Runtime safety model
 
-This is an inline-hook profiler, so it is inherently more invasive than the public SCS telemetry logger.
+This is an inline-hook profiler and is more invasive than the public SCS telemetry logger.
 
-It is therefore fail-closed.
+It is fail-closed against the exact target build.
 
-Before installing any hook, the plugin verifies the exact target executable using:
+Before installing any hook v0.1 verifies:
 
 - PE timestamp: `0x6AB3C451`
 - SizeOfImage: `0x0398A000`
-- exact prologue bytes for all eight target functions
+- exact prologue bytes for all eight targets
 
 If any check fails, no hooks are installed.
 
 On partial installation failure, already installed hooks are restored.
 
-On normal telemetry shutdown, all original prologue bytes are restored before the DLL closes its log.
+On normal telemetry shutdown, original prologue bytes are restored.
 
-## What it does not do
+## Trampoline constraints
 
-The profiler does not intentionally change:
+The simple trampoline is only appropriate when the copied prologue is relocation-safe.
 
-- rendering settings,
-- traffic,
-- physics,
-- map state,
-- resource selection,
-- descriptor contents,
+For the selected v0.1 targets the hook lengths were chosen on instruction boundaries and the copied sequences were inspected for problematic early relative/RIP-sensitive instructions.
+
+LOOP/COORD were intentionally not hooked with this mechanism because their early instruction sequences were less suitable.
+
+This does not eliminate all risk:
+- recovered ABI can still be wrong;
+- stack/XMM arguments can be misunderstood;
+- scheduler preemption can make wall-time duration look like function work;
+- concurrent patching is not inherently atomic.
+
+## What the probe does not intentionally change
+
+It does not intentionally modify:
+
+- rendering settings;
+- traffic;
+- physics;
+- map state;
+- resource selection;
+- descriptor contents;
 - pacing cvars.
 
-The hook wrappers timestamp the original call and then return its original result path.
+The wrappers time original calls and return through the original execution path.
 
-## Remaining risk
+## Build artifact
 
-Exact signatures greatly reduce the risk of applying a hook to the wrong build, but they do not prove the recovered ABI is perfect.
-
-A bad ABI interpretation can still crash the game.
-
-For this reason the first runtime session is treated as a validation run. The plugin does not modify game files beyond creating its CSV, and uninstalling it is simply removing the DLL while the game is closed.
-
-## Build artifact used for the first run
-
-Local first build:
+First local build:
 
 - size: `54,272` bytes
 - SHA-256: `A8FFB4254F77BDF1ADEAC9BBCA9021B0253AD866235D373AC856809B7F9A3A17`
 
-A `LoadLibrary` self-check confirmed that the DLL loads and exports:
+A `LoadLibrary` self-check confirmed the DLL loads and exports:
 
 - `scs_telemetry_init`
 - `scs_telemetry_shutdown`
 
-This does not execute the ETS-specific hook initialization; that requires the actual target executable.
+That test validates the artifact/dependencies, not the ETS-specific hook initialization.
 
-## Correlation plan
+## Recommended next stage
 
-The same run also keeps `NemoFrameLogger` active.
+Before relying on a revised hook probe:
 
-For every 5-second interval:
+1. investigate indirect/callback/work-queue linkage around the unresolved middle;
+2. collect a broad ETW/WPA + PresentMon/GPU trace;
+3. use that trace to decide whether the dominant spike is:
+   - CPU render work;
+   - synchronization/wait;
+   - GPU/present;
+   - file I/O/asset streaming;
+   - driver/OS scheduling.
 
-1. identify windows with elevated max frame time / threshold counts,
-2. compute deltas from the cumulative chain counters,
-3. compare sampled call duration and maxima at each level,
-4. find the earliest level whose cost rises with the frame spike.
-
-Possible outcomes:
-
-- **RG already expensive, lower chain normal** — focus on the new 1.61 RG owner/refactor.
-- **T1 becomes expensive** — descend into the reconstructed T1 subtree.
-- **RQ/BUNDLE/descriptor becomes expensive** — continue from the old 1.60 renderer finding.
-- **none correlate** — stop pursuing this chain and move to present/driver/scheduler or another engine subsystem.
-
-The last outcome is useful: it prevents another long sequence of increasingly narrow hooks on the wrong hypothesis.
+If broad tracing points back into these regions, a revised QPC-aligned probe becomes the next focused instrument.
