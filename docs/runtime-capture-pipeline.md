@@ -1,16 +1,18 @@
 # Runtime capture pipeline
 
-Status: PresentMon/ChainProbe runtime evidence acquired. One final ETW capture remains.
+Status: v0.3 exact-RG correlation run ready.
 
-## Goal
+## Current experiment
 
-The final broad run combines:
-- NemoFrameLogger v3 frame windows;
-- NemoChainProbe161 v0.2 threaded intervals;
-- PresentMon CPU/GPU/present metrics;
-- Windows ETW scheduler/GPU/driver/disk activity.
+The immediate experiment uses:
+- NemoFrameLogger v3;
+- NemoChainProbe161 v0.3 exact-RG;
+- PresentMon 2.6.0.
 
-All project telemetry exposes QPC-compatible timing.
+It intentionally does **not** use WPR/ETW.
+
+Purpose:
+replace five-second bucket correlation with direct event/frame QPC overlap.
 
 ## PresentMon
 
@@ -26,87 +28,56 @@ Target:
 Output:
 v2 metrics + QPC time.
 
-## WPR / ETW
+## v0.3 exact RG
 
-Profiles:
+Exact stream:
 ```text
-GeneralProfile.Light
-GPU.Light
+event_seq,rg_call_seq,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
 ```
 
-Purpose:
-- SampledProfile
-- ReadyThread / CSwitch
-- DPC / ISR
-- DiskIO
-- DXGI / DxgKrnl / GPU scheduling
+Every RG call is emitted through a ring buffer.
 
-## Tool location / temporary elevation staging
+No RG-hook file I/O.
 
-Canonical tooling lives on the PrismRE workspace drive.
+## Launcher
 
-The launcher stages only itself and PresentMon into a unique `%TEMP%` directory before UAC elevation. The parent process watches marker files rather than waiting on the elevated PID, archives the result back to the workspace, then removes temporary staging.
+The no-elevation launcher verifies exact hashes and starts the game directly.
 
-No persistent Clevo trace-tool directory is required.
+No Steam URI.
+No WPR.
+No UAC.
 
-## One-click launcher
+Capture during the run uses an isolated `%TEMP%\NemoByteCore\ETS2RGV03_<GUID>` directory.
 
-Current direct launch target:
-`D:\Games\Euro Truck Simulator 2\bin\win_x64\eurotrucks2.exe`
+After ETS exits:
+- PresentMon is finalized;
+- game.log and both ChainProbe v0.3 CSV files are verified fresh;
+- clean ChainProbe shutdown markers are required;
+- files are archived to the PrismRE workspace;
+- only after successful archive verification is the per-run TEMP directory removed.
 
-Expected SHA-256:
-`EB17944139BE4DE3D70D0CD57CDAA7C52C9E326ECF2D0DD3EA2F806545C74A53`
+## Why ETW is deferred
 
-Steam is not part of the launch path.
+The previous PresentMon capture is already sufficient to show real long-frame events.
 
-The launcher:
-- self-elevates through UAC;
-- verifies exact ETS/tool/plugin hashes;
-- refuses to interfere with an existing WPR session;
-- launches ETS directly;
-- waits for fresh NemoFrame gameplay telemetry;
-- starts WPR + PresentMon;
-- waits for ETS exit;
-- stops/finalizes WPR **before** any PresentMon cleanup;
-- verifies ETL creation;
-- archives capture data back to the workspace.
+The unresolved problem is that v0.2 only identified RG maxima in five-second buckets.
 
-Latest launcher SHA-256:
-`8FF71233E9DB96774D34D10397B700524E3988779BCF1EDD94DE8A1197F4B4DA`
+Before paying the cost/complexity of another ETW run, v0.3 will establish exact timing:
 
-## Why the previous ETL was lost
+Does the specific long PresentMon frame actually overlap a comparably long RG call?
 
-The previous order attempted a PresentMon termination helper before `wpr -stop`.
+ETW remains available later for:
+- ReadyThread / CSwitch;
+- CPU sampling;
+- DPC/ISR;
+- disk I/O;
+- DXGI/DxgKrnl scheduling.
 
-PresentMon emitted a warning on stderr. PowerShell Stop behavior sent execution into `catch`, which canceled WPR instead of saving the ETL.
+## Run protocol
 
-Current order guarantees ETL finalization first.
+1. run the v0.3 no-UAC launcher;
+2. drive normally until several characteristic hitches occur;
+3. exit ETS normally;
+4. wait for `CAPTURE_COMPLETE`.
 
-## Existing runtime evidence
-
-The previous PresentMon capture is already useful and should not be repeated merely for frame classification.
-
-It captured 14,670 rows and spikes up to ~72 ms.
-
-The remaining purpose of the final run is specifically ETW classification:
-- CPU execution vs scheduler wait;
-- worker wakeup / synchronization;
-- submit / present dependency;
-- driver/DPC activity;
-- disk activity.
-
-## Final run protocol
-
-1. launch the one-click tool;
-2. approve UAC;
-3. drive normally until several characteristic hitches occur;
-4. exit ETS normally;
-5. wait for capture archive confirmation.
-
-No manual START/STOP is required.
-
-## Interpretation rule
-
-ChainProbe measures sampled elapsed wall time, not guaranteed CPU execution time.
-
-PresentMon provides frame/GPU timing, but ETW scheduler state is required before calling a long chain sample a CPU hotspot or synchronization stall.
+No manual START/STOP and no elevation are required.
