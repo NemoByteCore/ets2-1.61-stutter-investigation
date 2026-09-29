@@ -2,17 +2,16 @@
 
 `NemoChainProbe161` is an exact-build inline-hook profiler for the current ETS2 1.61 candidate render chain.
 
-## Current status
+## Current runtime build
 
-The original public source in `src/NemoChainProbe161.cpp` is the historical v0.1 design.
+**v0.3 exact-RG**
 
-The current runtime build is **v0.2 threaded**.
+- size: `61,952` bytes
+- SHA-256: `DAD26A46EE67FBA81039C3994E8205C739548A14262BEBCC75977442B4B29A3E`
 
-v0.1 should not be used as the decisive correlation build.
+v0.2 remains important historical evidence but is no longer the deployed build.
 
 ## Static chain
-
-The recovered 1.61 relationship is:
 
 ```text
 1401CBEE0
@@ -30,11 +29,9 @@ The recovered 1.61 relationship is:
  -> 1402E5FF0
 ```
 
-The middle is an indirect vtable/adapter dispatch. That is why a normal direct-call BFS could not connect `140226960` to `141473E60`.
-
 ## Hook set
 
-| Label | VA | Sampling |
+| Label | VA | Aggregate sampling |
 |---|---:|---:|
 | RG-owner candidate | `140227140` | 1 / 1 |
 | T1-like candidate | `140226960` | 1 / 8 |
@@ -45,110 +42,78 @@ The middle is an indirect vtable/adapter dispatch. That is why a normal direct-c
 | BUNDLE_BUILD | `1402E5040` | 1 / 64 |
 | DX12 descriptor builder | `14029F9B0` | 1 / 64 |
 
-## v0.1 problems
+RG additionally receives an exact event for **every call** in v0.3.
 
-v0.1 emitted cumulative values every approximately five seconds.
+## Why v0.3 exists
 
-Useful totals could be differenced, but cumulative maximum made it impossible to identify the interval in which a long call actually happened.
+v0.2 fixed cumulative-max/report-thread problems but still summarized data in roughly five-second windows.
 
-Its report path also ran from the RG wrapper, creating avoidable observer-effect risk.
+That is inadequate for statements such as:
+"a 71 ms PresentMon frame contained the 10 ms RG maximum from the same five-second bucket."
 
-## v0.2 threaded changes
+Those two events might be separated by several seconds.
 
-Current build:
+v0.3 removes this ambiguity.
 
-- size: `58,880` bytes
-- SHA-256: `C71C659DDD1A6A1C852C692C945C5E5CD1BEE9259E80C8DF86D7104290B41CB4`
+## Exact RG stream
 
-Changes:
+Columns:
 
-- QPC interval start/end;
-- interval call deltas;
-- interval sampled-call deltas;
-- interval sampled duration;
-- interval maximum;
-- sampled-duration buckets >=1/2/4/8/16/33 ms;
-- stat structures isolated to separate cache lines;
-- reporting moved to a dedicated low-frequency reporter thread;
-- RG hot path no longer performs report/CSV I/O;
-- exact-build PE/signature validation retained.
-
-Offline validation:
-
-- `LoadLibrary`: OK
-- `scs_telemetry_init`: exported
-- `scs_telemetry_shutdown`: exported
-
-## ABI cross-check before first runtime run
-
-A pre-runtime source/assembly review found one concrete ABI-width mismatch.
-
-Old declaration:
-
-```cpp
-using FnRQ = void(*)(uint32_t,void*,int64_t);
+```text
+event_seq,rg_call_seq,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
 ```
 
-Static callsite/body evidence shows `14160D010` carries a full 64-bit object address in RCX.
+Properties:
+- every RG call is recorded;
+- QPC end is taken immediately after the trampoline returns;
+- duration therefore excludes later ring publication and thread-ID retrieval;
+- 65,536 event slots;
+- producer path contains no CSV/file write;
+- reporter thread drains events;
+- clean shutdown reports total event count and lost-event count.
 
-The old compiled wrapper forwarded only ECX, zeroing the upper 32 bits.
+Expected RG rate from earlier runs is around 55 calls/s, leaving large capacity margin for normal short captures.
 
-The declaration and wrapper were changed to `uint64_t`.
+## Existing aggregate stream
 
-The rebuilt wrapper now forwards full RCX with 64-bit moves before the trampoline call.
+v0.3 retains the v0.2 summary statistics:
+- call/sample counts;
+- sampled elapsed duration;
+- interval max;
+- >=1/2/4/8/16/33 ms buckets;
+- QPC interval bounds.
 
-The same cross-check also verified that the compiler-generated sampled wrappers create normal Windows x64 outgoing call frames; the six-argument downstream wrapper explicitly forwards stack args 5/6 into the new call frame.
+## ABI validation
 
-## Safety model
+The earlier RQ declaration bug was fixed before runtime investigation:
+the first RQ argument is 64-bit.
 
-Before installing any hook the build validates:
+The v0.3 compiled DLL was re-checked and still forwards the full RCX value with 64-bit moves before the trampoline call.
 
-- PE timestamp `0x6AB3C451`;
-- SizeOfImage `0x0398A000`;
-- exact prologue bytes for all eight targets.
+Validation:
+- LoadLibrary: OK
+- telemetry init export: OK
+- telemetry shutdown export: OK
 
-A mismatch fails closed.
+## Interpretation caveat
 
-Partial hook installation failure restores already patched entries.
+RG duration remains **elapsed wall time**.
 
-Normal shutdown restores original prologue bytes.
-
-## Remaining interpretation caveat
-
-The probe records sampled **elapsed wall time**.
-
-A long sample can mean:
-
+A long exact event can contain:
 - CPU execution;
-- lock/wait time;
-- scheduler preemption;
-- a combination of those.
+- preemption;
+- synchronization/wait time;
+- combinations of these.
 
-Therefore a long ChainProbe sample should not automatically be called a CPU hotspot.
-
-The planned WPR/PresentMon capture exists specifically to distinguish those cases.
-
-## Runtime correlation
-
-The matching FrameLogger v3 emits QPC start/end/frequency for its frame windows.
-
-PresentMon is also configured to emit QPC time.
-
-That allows direct overlap against ChainProbe intervals rather than matching independent five-second windows by sequence number.
+v0.3 solves **when** the RG event occurred relative to a frame. It does not by itself prove **why** the call took that long.
 
 ## Next experiment
 
-Use one combined run with:
+Run PresentMon + FrameLogger + v0.3 exact-RG without WPR.
 
-- ChainProbe v0.2 threaded;
-- NemoFrameLogger v3;
-- PresentMon 2.6.0;
-- WPR GeneralProfile.Light + GPU.Light.
+Then directly intersect individual PresentMon frame QPC intervals with RG event QPC intervals.
 
-Then correlate chain timing against:
-
-- frame-time spikes;
-- ReadyThread/CSwitch scheduling;
-- GPU/present behavior;
-- DPC/ISR;
-- DiskIO.
+Decision:
+- long frame and comparably long RG -> inspect inside RG;
+- long frame and short RG -> move profiling outside/above RG;
+- unresolved scheduling semantics -> targeted ETW.
