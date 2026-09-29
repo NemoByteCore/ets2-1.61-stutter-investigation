@@ -6,59 +6,60 @@ Public investigation into recurring frame-time spikes and visible stutter in **E
 
 **Active investigation. Root cause is not yet claimed.**
 
-Target:
-- ETS2 `1.61.1.1`
-- revision `6949e633e77902f7e023819d3131cc6ccce3707f`
-- EXE SHA-256 `EB17944139BE4DE3D70D0CD57CDAA7C52C9E326ECF2D0DD3EA2F806545C74A53`
-- renderer DX12
+Current exact-correlation instrumentation:
+- NemoChainProbe161 v0.3 exact-RG
+- NemoFrameLogger v4 exact-frame
 
-## Established
+The next experiment requires neither WPR nor PresentMon.
 
-- visible stutter occurs in vanilla 1.61 and with ProMods;
-- PresentMon captured real frame intervals up to ~72 ms;
-- lower-chain sampled functions are generally much shorter than the full stutters;
-- the recovered upper/lower relationship includes an indirect adapter/vtable bridge;
-- v0.2's five-second aggregation is too coarse to prove exact RG/frame coincidence.
+## Why
 
-## Current instrumentation
+Earlier runtime captures proved real long-frame events, but ChainProbe v0.2 summarized RG timing in approximately five-second windows.
 
-Current runtime build is **NemoChainProbe161 v0.3 exact-RG**.
+That resolution cannot prove that a specific RG maximum occurred during a specific slow frame.
 
-DLL:
+v0.3 and FrameLogger v4 solve the timing problem directly:
+both emit exact QPC intervals.
+
+## NemoChainProbe161 v0.3
+
 - size `61,952`
 - SHA-256 `DAD26A46EE67FBA81039C3994E8205C739548A14262BEBCC75977442B4B29A3E`
 
-v0.3 records every RG call:
-- QPC start
-- QPC end
-- duration
-- thread ID
+Every RG call:
+```text
+event_seq,rg_call_seq,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
+```
 
-The hook does not perform file I/O; events are published to a ring and drained by the reporter thread.
+## NemoFrameLogger v4
 
-The existing v0.2 aggregate telemetry is retained for context.
+- size `55,296`
+- SHA-256 `B1D6D9E93FC466D5F31E650E2567B4EA4D5541B0675D4CED37AF1A7D6782F413`
 
-## Why this experiment comes before ETW
+Every valid frame interval:
+```text
+event_seq,frame_seq,segment_id,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
+```
 
-Previous runtime results only matched PresentMon frames to five-second ChainProbe buckets.
+## No-UAC path
 
-That can show that events occur in the same broad interval, but cannot establish that a particular RG call belongs to a particular long frame.
+A non-elevated PresentMon session was tested and failed with access denied on the current Windows account.
 
-The next run therefore measures exact RG events first.
+Rather than changing Windows privileges/groups, the next experiment is plugin-only.
 
-ETW is deferred until this direct timeline establishes whether the long stall is:
-- substantially inside RG;
-- outside/above RG;
-- or still ambiguous enough to require scheduler/system evidence.
+No WPR.
+No PresentMon.
+No elevation.
 
 ## Next experiment
 
-PresentMon + FrameLogger + v0.3 exact-RG.
+Capture exact frames and exact RG calls during the same short drive, then intersect the QPC intervals directly.
 
-No WPR is required for this experiment.
+Only if the exact result remains ambiguous will targeted ETW become the next step.
 
 See:
 - `docs/nemo-chain-probe-161.md`
+- `docs/nemo-frame-logger-v4.md`
 - `docs/runtime-capture-pipeline.md`
 - `docs/runtime-results-2026-09-29.md`
 
