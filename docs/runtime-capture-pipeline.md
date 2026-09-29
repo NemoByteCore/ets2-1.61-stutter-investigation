@@ -48,6 +48,8 @@ The no-UAC launcher:
 - waits for normal ETS exit;
 - verifies fresh exact CSVs and clean shutdown markers;
 - rejects captures with lost ring events;
+- requires the RG and frame exact streams to report the same QPC frequency;
+- validates `event_seq` continuity as exactly `1..N` with no gaps or duplicates in both exact CSV files;
 - archives directly to the PrismRE workspace.
 
 No runtime TEMP capture is required.
