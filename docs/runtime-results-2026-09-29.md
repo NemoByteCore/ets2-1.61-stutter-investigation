@@ -1,67 +1,46 @@
 # Runtime results — 2026-09-29
 
-## Existing v0.2 evidence
+## Historical v0.2 runs
 
-Two controlled runs were completed before v0.3.
+Two earlier runs established real stutter events.
 
-### Run A — plugin-only
+Run A:
+FrameLogger max interval 33.470 ms with RG max 18.718 ms somewhere in the same five-second ChainProbe bucket.
 
-Largest FrameLogger spike:
-33.470 ms.
+Run B:
+PresentMon captured frame intervals including:
+71.7929 / 63.3167 / 53.3464 / 47.2012 / 47.0668 ms.
 
-Same five-second ChainProbe window:
-- RG max 18.718 ms
-- T1 max 0.541 ms
-- winner max 0.444 ms
-- RQ max 0.418 ms
-- HEAD max 0.468 ms
-- downstream max 0.516 ms
+## Measurement correction
 
-### Run B — PresentMon + plugins
+The old wording over-associated frame spikes with RG maxima.
 
-PresentMon rows:
-14,670.
-
-Representative frame intervals:
-- 71.7929 ms
-- 63.3167 ms
-- 53.3464 ms
-- 47.2012 ms
-- 47.0668 ms
-
-The old v0.2 correlation placed these frames inside five-second ChainProbe windows whose RG maxima were roughly 6–12 ms in several cases.
-
-## Important correction
-
-That does **not** establish that the RG maximum occurred during the specific slow frame.
-
-v0.2's five-second aggregation is too coarse.
+v0.2 only provides approximately five-second aggregate windows.
 
 Therefore:
-- exact RG/frame coincidence is currently unproven;
-- "RG participates in this specific 71 ms frame" is not yet a fact;
-- lower-chain interval maxima remain useful context but not exact event attribution.
+- a slow frame and an RG maximum in the same bucket may be separated by seconds;
+- exact per-frame RG attribution is not established by those runs;
+- no root cause is claimed from that bucket-level relationship.
 
 ## Current instrumentation
 
-NemoChainProbe161 v0.3 exact-RG is now deployed.
+NemoChainProbe161 v0.3 exact-RG:
+- every RG call has exact QPC start/end and thread ID.
 
-It records every RG call with:
-- QPC start/end;
-- duration;
-- thread ID.
+NemoFrameLogger v4 exact-frame:
+- every valid frame interval has exact QPC start/end, segment ID and thread ID.
 
-## Next result to obtain
+## Next result
 
-For each slow PresentMon frame:
-1. derive the exact QPC frame interval;
-2. find RG calls that truly overlap that interval;
-3. compare RG duration with frame duration.
+For each long v4 frame interval:
+- enumerate every RG interval that overlaps it;
+- measure overlap;
+- compare total RG time with frame duration;
+- compare callback/hook thread IDs.
 
-This single measurement determines the next branch:
+Decision:
+- long frame dominated by RG -> inspect inside RG;
+- long frame with short/non-overlapping RG -> move profiling elsewhere;
+- timing points to wait/preemption but cannot classify it -> targeted ETW.
 
-- **RG explains most of frame:** instrument/sample inside RG.
-- **RG is short:** move profiling above/outside RG.
-- **exact timing still suggests scheduling/wait ambiguity:** use targeted ETW.
-
-No root cause is claimed before this exact-event correlation.
+This exact-event test precedes any further broad tracing.
