@@ -135,3 +135,36 @@ A separate T1-heavy class also remains:
 There are also long frames with low RG contribution, so RG is not the sole stutter source.
 
 The next runtime experiment should stay narrow: split only the post-T1 renderer-finalization tail into a few compact per-RG phases. Do not reintroduce per-subevent logging or a broad trace.
+
+
+## v0.6 DX11 post-T1 tail experiment
+
+The accepted v0.5 result localized a major RG-linked stall class to work after the final T1 call.
+
+Strongest observed example:
+- frame: 61.196 ms
+- RG: 49.720 ms
+- T1 total: 3.652 ms
+- pre-T1: 0.002 ms
+- inter-T1 gaps total: 0.037 ms
+- post-T1: 46.028 ms
+
+Static analysis identifies the active DX11 device vtable at `0x1422127A8`.
+
+The next compact probe measures six validated post-T1 DX11 vtable phases:
+- `+0x160 -> 0x1402B62B0`
+- `+0x120 -> 0x1402E8FE0`
+- `+0x0D0 -> 0x1402AE700`
+- `+0x108 -> 0x1402B1A30`
+- `+0x110 -> 0x1402B3A80`
+- `+0x118 -> 0x1402F03B0`
+
+The `+0x2D8` slot resolves to a CFG indirect-call guard and is not treated as a renderer phase.
+
+The probe keeps one compact row per RG call. It records each phase count/time plus a nested-safe union of instrumented tail time. The deterministic analyzer computes residual post-T1 time not covered by the six phases.
+
+Analyzer:
+- `tools/analysis_161/analyze_exact_v87_dx11_tail.py`
+- SHA-256 `D636312CEF7770E64EA00812E117077BFC0CE2637E99B6EDB03CA9D722D83384`
+
+No v0.6 runtime result is claimed yet. This section documents the prepared next experiment only.
