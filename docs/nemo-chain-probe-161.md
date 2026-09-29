@@ -109,9 +109,11 @@ v0.3 solves **when** the RG event occurred relative to a frame. It does not by i
 
 ## Next experiment
 
-Run PresentMon + FrameLogger + v0.3 exact-RG without WPR.
+Run NemoFrameLogger v4 exact-frame + v0.3 exact-RG.
 
-Then directly intersect individual PresentMon frame QPC intervals with RG event QPC intervals.
+PresentMon is not part of the no-UAC path on the current account.
+
+Directly intersect each v4 frame QPC interval with RG event QPC intervals.
 
 Decision:
 - long frame and comparably long RG -> inspect inside RG;
