@@ -1,83 +1,69 @@
 # Runtime capture pipeline
 
-Status: v0.3 exact-RG correlation run ready.
+Status: exact plugin-only correlation ready.
 
 ## Current experiment
 
-The immediate experiment uses:
-- NemoFrameLogger v3;
-- NemoChainProbe161 v0.3 exact-RG;
-- PresentMon 2.6.0.
+```text
+NemoFrameLogger v4 exact-frame
+           ↕ QPC
+NemoChainProbe161 v0.3 exact-RG
+```
 
-It intentionally does **not** use WPR/ETW.
+No external trace consumer is required.
 
-Purpose:
-replace five-second bucket correlation with direct event/frame QPC overlap.
+## Why PresentMon is not used
 
-## PresentMon
+PresentMon 2.6.0 was explicitly tested without elevation on the current account.
 
-Version:
-`2.6.0 x64`
+Session start failed with access denied and stated that administrative privilege or Performance Log Users membership is required.
 
-SHA-256:
-`B2A706BC6AD475749E3B7E3409263AA1E6906D45BDCF993F6DBC0F660188F1AF`
+No Windows privilege/group modification was made.
 
-Target:
-`eurotrucks2.exe`
+## Outputs
 
-Output:
-v2 metrics + QPC time.
+ChainProbe exact RG:
+`NemoChainProbe161_v03_rg.csv`
 
-## v0.3 exact RG
-
-Exact stream:
 ```text
 event_seq,rg_call_seq,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
 ```
 
-Every RG call is emitted through a ring buffer.
+FrameLogger exact frames:
+`NemoFrameLogger_v4_frames.csv`
 
-No RG-hook file I/O.
+```text
+event_seq,frame_seq,segment_id,qpc_start,qpc_end,duration_ticks,duration_us,thread_id
+```
 
-## Launcher
+Both use ring-buffer publication and reporter-thread file I/O.
 
-The no-elevation launcher verifies exact hashes and starts the game directly.
+## Launcher behavior
 
-No Steam URI.
-No WPR.
-No UAC.
+The no-UAC launcher:
+- verifies exact ETS/ChainProbe/FrameLogger hashes;
+- launches ETS directly;
+- waits for fresh telemetry start;
+- starts no WPR and no PresentMon;
+- waits for normal ETS exit;
+- verifies fresh exact CSVs and clean shutdown markers;
+- rejects captures with lost ring events;
+- archives directly to the PrismRE workspace.
 
-Capture during the run uses an isolated `%TEMP%\NemoByteCore\ETS2RGV03_<GUID>` directory.
+No runtime TEMP capture is required.
 
-After ETS exits:
-- PresentMon is finalized;
-- game.log and both ChainProbe v0.3 CSV files are verified fresh;
-- clean ChainProbe shutdown markers are required;
-- files are archived to the PrismRE workspace;
-- only after successful archive verification is the per-run TEMP directory removed.
+## Correlation
 
-## Why ETW is deferred
+For every long frame:
+1. take exact `frame.qpc_start..frame.qpc_end`;
+2. find RG intervals that intersect it;
+3. calculate overlap and RG/frame duration ratio;
+4. compare thread IDs.
 
-The previous PresentMon capture is already sufficient to show real long-frame events.
+This is the measurement that v0.2's five-second buckets could not provide.
 
-The unresolved problem is that v0.2 only identified RG maxima in five-second buckets.
+## ETW
 
-Before paying the cost/complexity of another ETW run, v0.3 will establish exact timing:
+ETW is deferred.
 
-Does the specific long PresentMon frame actually overlap a comparably long RG call?
-
-ETW remains available later for:
-- ReadyThread / CSwitch;
-- CPU sampling;
-- DPC/ISR;
-- disk I/O;
-- DXGI/DxgKrnl scheduling.
-
-## Run protocol
-
-1. run the v0.3 no-UAC launcher;
-2. drive normally until several characteristic hitches occur;
-3. exit ETS normally;
-4. wait for `CAPTURE_COMPLETE`.
-
-No manual START/STOP and no elevation are required.
+Use it only if exact correlation leaves a scheduler/wait question that plugin timing cannot answer.
