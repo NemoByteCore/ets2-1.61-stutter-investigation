@@ -53,7 +53,7 @@ The current launcher:
 - self-elevates through normal Windows UAC;
 - verifies exact runtime-tool hashes;
 - refuses to interfere with an existing WPR session;
-- launches ETS2 through Steam;
+- launches the verified ETS2 executable directly;
 - waits for the game process;
 - waits for fresh NemoFrame gameplay-start telemetry in the current game.log;
 - starts WPR + PresentMon only after gameplay telemetry begins;
@@ -93,3 +93,12 @@ No manual START/STOP should be required in the normal path.
 ChainProbe measures sampled elapsed wall time, not guaranteed CPU execution time.
 
 ETW scheduling state and PresentMon/GPU data are required before calling a long chain sample a CPU hotspot.
+
+
+Direct launch target:
+`D:\Games\Euro Truck Simulator 2\bin\win_x64\eurotrucks2.exe`
+
+Expected SHA-256:
+`EB17944139BE4DE3D70D0CD57CDAA7C52C9E326ECF2D0DD3EA2F806545C74A53`
+
+Steam is not part of the launch path.
