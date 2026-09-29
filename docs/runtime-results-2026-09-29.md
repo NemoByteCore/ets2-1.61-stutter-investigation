@@ -88,3 +88,50 @@ Therefore the exact run supports two statements:
 This is not a sole-root-cause claim. RG elapsed time may still contain execution, preemption, synchronization, or waiting.
 
 Next step: instrument inside RG for the RG-linked class, while preserving a separate outside-RG branch for long residual stalls.
+
+
+## v0.5 compact T1-gap result
+
+Accepted capture:
+- RG events: 51,283
+- frame intervals: 53,061
+- `rg_lost=0`
+- `frame_lost=0`
+- QPC frequency: 10,000,000
+- clean capture completion
+
+Public deterministic artifacts:
+- `tools/analysis_161/analyze_exact_v85_t1_gaps.py`
+- `analysis/v85/SUMMARY_T1_GAPS.md`
+- `analysis/v85/RESULTS_T1_GAPS.csv`
+
+The compact probe records one row per RG call and breaks RG time into:
+- T1 total/max;
+- time before the first T1;
+- total gaps between T1 calls;
+- largest individual T1 gap;
+- time after the final T1;
+- total elapsed RG time outside T1.
+
+The strongest RG-linked stall in this capture was:
+
+- frame 44142: 61.196 ms
+- RG call 41712: 49.720 ms
+- RG overlap: 81.25%
+- T1 total: 3.652 ms
+- pre-T1: 0.002 ms
+- inter-T1 gaps total: 0.037 ms
+- post-T1: 46.028 ms
+
+This localizes that stall class to the post-T1 renderer-finalization tail rather than setup before T1 or gaps between T1 calls.
+
+A separate T1-heavy class also remains:
+
+- frame 25571: 32.921 ms
+- RG call 24692: 18.232 ms
+- T1 total: 16.517 ms
+- maximum single T1: 15.168 ms
+
+There are also long frames with low RG contribution, so RG is not the sole stutter source.
+
+The next runtime experiment should stay narrow: split only the post-T1 renderer-finalization tail into a few compact per-RG phases. Do not reintroduce per-subevent logging or a broad trace.
