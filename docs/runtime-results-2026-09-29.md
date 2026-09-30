@@ -167,4 +167,39 @@ Analyzer:
 - `tools/analysis_161/analyze_exact_v87_dx11_tail.py`
 - SHA-256 `D636312CEF7770E64EA00812E117077BFC0CE2637E99B6EDB03CA9D722D83384`
 
-No v0.6 runtime result is claimed yet. This section documents the prepared next experiment only.
+No valid v0.6 tail-phase performance result is claimed. The accepted run used DX12 while this probe patched a DX11 vtable, so its zero tail counters were a backend mismatch.
+
+The active backend was remapped before any further drive.
+
+
+## v0.7 active-DX12 tail result — 2026-09-30
+
+The v0.6 tail experiment was invalid for tail-phase conclusions because the game was running DX12 while v0.6 patched a DX11 vtable. The zero v0.6 phase counters therefore indicated a backend mismatch, not that the phases were fast.
+
+The active DX12 backend was then mapped statically and a compact v0.7 probe instrumented the corresponding post-T1 virtual calls.
+
+Accepted v0.7 capture:
+- RG events: 15,551
+- RG events lost: 0
+- instrumented DX12 tail active in 100% of RG rows
+
+The strongest RG event in the capture:
+- RG: 27.086 ms
+- T1: 0.510 ms
+- post-T1: 26.497 ms
+- DX12 slot +0x108 target: 26.346 ms
+
+Across the capture, the +0x108 phase was the only measured tail phase to produce >=8 ms events, including one >=16 ms event.
+
+Frame correlation also shows the same phase accounting for most of post-T1 time in multiple slow frames. Example:
+- frame interval: 24.924 ms
+- overlapping RG: 9.061 ms
+- T1: 4.102 ms
+- post-T1: 4.900 ms
+- +0x108 phase: 4.464 ms
+
+The +0x108 target is a large DX12 command-stream interpreter. The next experiment will split only that function into a small set of internal subphases.
+
+This remains a class-specific result, not a sole-root-cause claim:
+- a separate T1-heavy class remains;
+- some long frames still have low RG contribution.
