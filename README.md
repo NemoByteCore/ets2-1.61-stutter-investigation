@@ -7,10 +7,14 @@ Public investigation into recurring frame-time spikes and visible stutter in **E
 **Active investigation. Root cause is not yet claimed.**
 
 Current exact-correlation instrumentation:
-- NemoChainProbe161 v0.3 exact-RG
+- NemoChainProbe161 v0.7 active-DX12 tail probe
 - NemoFrameLogger v4 exact-frame
 
-The next experiment requires neither WPR nor PresentMon.
+Current localization:
+- the post-T1 RG-linked stall class is dominated by DX12 slot +0x108 / its command-stream interpreter;
+- T1-heavy and low-RG long-frame classes remain separate.
+
+The next experiment stays narrow: split only the +0x108 target into compact internal subphases.
 
 ## Why
 
@@ -51,11 +55,20 @@ No WPR.
 No PresentMon.
 No elevation.
 
+## Current result
+
+The accepted v0.7 capture recorded 15,551 RG events with zero loss and active DX12 tail counters in every RG row.
+
+Worst RG in that run:
+- 27.086 ms total RG
+- 26.497 ms post-T1
+- 26.346 ms in the DX12 +0x108 phase
+
+That phase also accounts for most post-T1 time in multiple slow-frame correlations.
+
 ## Next experiment
 
-Capture exact frames and exact RG calls during the same short drive, then intersect the QPC intervals directly.
-
-Only if the exact result remains ambiguous will targeted ETW become the next step.
+Split only the +0x108 DX12 command-stream target into a few internal subphases. Do not broaden back to ETW unless the narrowed result becomes ambiguous.
 
 See:
 - `docs/nemo-chain-probe-161.md`
