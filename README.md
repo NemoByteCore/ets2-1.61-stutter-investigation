@@ -1,12 +1,16 @@
-# ETS2 1.61 Stutter Investigation
+# ETS2 1.61 DX12 Stutter — Independent Player Investigation
 
-Public investigation into recurring frame-time spikes and visible stutter in **Euro Truck Simulator 2 1.61 (DX12)**.
+Independent reverse-engineering notes from a player who wanted to find out why **Euro Truck Simulator 2 1.61 (DX12)** keeps stuttering.
+
+**Not affiliated with SCS Software. Not commissioned by SCS. Not made for SCS.**
+
+I investigated this for myself because the game was stuttering badly enough to make me dig into Prism3D. The repository remains public only because the results are useful evidence and because I am not going to keep doing unpaid renderer work for the game's developers.
 
 ## Status
 
-> **Investigation closed. I'm done patching the game for its developers.**
+> **Investigation closed. I found the engine-side problem I was looking for, and I'm not doing SCS's renderer work for them.**
 
-This repository is no longer an active reverse-engineering project. It is being kept public as a technical record and as supporting material for a report to SCS Software.
+This repository is no longer an active reverse-engineering project. It is being kept public as a record of what I found. SCS can use the evidence if they want to fix their renderer, but producing a vendor-ready engineering package was never the purpose of this project.
 
 After narrowing the issue from frame-time spikes down to the DX12 draw path, the remaining problem is clear enough that continuing to build external patches no longer makes sense.
 
