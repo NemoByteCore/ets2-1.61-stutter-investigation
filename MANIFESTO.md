@@ -32,11 +32,11 @@ Another Steam thread: "The game engine is not very well optimized and since 1.50
 
 And another: "The game engine can't keep up in certain circumstances... I think there will be certain times and places on the map when it will still happen".
 
-These aren't isolated cases. This is the standard experience for anyone with hardware above mid-range.
+These aren't isolated cases. Similar reports keep appearing even from players with hardware well above the game's requirements.
 
-Exhibit C: The engine is still single-core bound.
+Exhibit C: The engine is still heavily main-thread / single-thread bottlenecked.
 
-This is one of the most damning pieces of evidence, and it's been known for years. Multiple sources confirm that ETS2 and ATS run primarily on a single CPU core.
+This is one of the most damning pieces of evidence, and it's been known for years. Multiple sources describe ETS2 and ATS as being heavily limited by single-thread performance, especially in CPU-heavy scenes.
 
 A post on TruckersMP: "ETS2 uses an old, single-threaded engine. It cannot scale well with modern hardware, so FPS tanks in crowded areas regardless of your GPU".
 
@@ -44,7 +44,7 @@ On Steam: "It comes down to single core processing power, this game is very sing
 
 On the SCS forum: "It uses only one core, so in the cities, where there's more traffic and more buildings, the CPU becomes the bottleneck and the GPU waits, which is why the GPU utilization goes down".
 
-A single-core engine in 2026. On hardware with 16, 24, or 32 threads. And the answer is still "we're working on it."
+A game still heavily constrained by single-thread performance in 2026. On hardware with 16, 24, or 32 threads. And the answer is still "we're working on it."
 
 Exhibit D: The "it's experimental" excuse is used to shut down reports.
 
@@ -56,12 +56,12 @@ So the community has internalized the excuse. "It's experimental" has become a s
 
 Exhibit E: The business model rewards this.
 
-I'm not going to accuse SCS of malice. I'm going to state a fact. DLC has a clear, measurable return on investment. A renderer rewrite does not. Nobody buys "Renderer Rewrite DLC." So the content keeps coming, and the infrastructure keeps getting pushed back. Maps, trucks, paint jobs, tuning packs. And meanwhile, the engine continues to crumble under its own weight.
+I'm not going to accuse SCS of malice. I'm going to state a fact. DLC has a clear, directly measurable return on investment. A renderer rewrite does not have a directly attributable sales line. Nobody buys "Renderer Rewrite DLC." That creates a much clearer short-term business incentive to keep content production moving than to prioritize infrastructure work. Maps, trucks, paint jobs, tuning packs. And meanwhile, the engine continues to crumble under its own weight.
 
 So here's my question.
 
 If SCS knows the engine is a problem, if the community has been reporting it for years, and if the technical debt has grown "so massive" that they've said so publicly, then why does every specific bug report get met with "it's experimental"?
 
-The answer is simple. Because "it's experimental" is not a technical response. It's a PR response. It's a way to close the thread without fixing anything. And as long as the DLC keeps selling, there's no incentive to change that.
+The answer is simple. Because "it's experimental" is not a technical response. It's a PR response. It's a way to close the thread without fixing anything. And as long as DLC remains the directly monetizable output, the short-term incentive structure favors content over infrastructure.
 
 I'm not asking for a new engine. I'm asking for an honest answer. If you're not going to fix the current DX12 path, say so. If you're not going to address the async PSO coverage gap, say so. But don't tell me it's experimental. I already know. I measured it.
