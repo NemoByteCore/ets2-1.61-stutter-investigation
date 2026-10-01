@@ -56,12 +56,12 @@ So the community has internalized the excuse. "It's experimental" has become a s
 
 Exhibit E: The business model rewards this.
 
-I'm not going to accuse SCS of malice. I'm going to state a fact. DLC has a clear, directly measurable return on investment. A renderer rewrite does not have a directly attributable sales line. Nobody buys "Renderer Rewrite DLC." That creates a much clearer short-term business incentive to keep content production moving than to prioritize infrastructure work. Maps, trucks, paint jobs, tuning packs. And meanwhile, the engine continues to crumble under its own weight.
+I'm not going to accuse SCS of malice. I'm going to state a fact. DLC has a clear, measurable return on investment. A renderer rewrite does not. Nobody buys "Renderer Rewrite DLC." So the content keeps coming, and the infrastructure keeps getting pushed back. Maps, trucks, paint jobs, tuning packs. And meanwhile, the engine continues to crumble under its own weight.
 
 So here's my question.
 
 If SCS knows the engine is a problem, if the community has been reporting it for years, and if the technical debt has grown "so massive" that they've said so publicly, then why does every specific bug report get met with "it's experimental"?
 
-The answer is simple. Because "it's experimental" is not a technical response. It's a PR response. It's a way to close the thread without fixing anything. And as long as DLC remains the directly monetizable output, the short-term incentive structure favors content over infrastructure.
+The answer is simple. Because "it's experimental" is not a technical response. It's a PR response. It's a way to close the thread without fixing anything. And as long as the DLC keeps selling, there's no incentive to change that.
 
 I'm not asking for a new engine. I'm asking for an honest answer. If you're not going to fix the current DX12 path, say so. If you're not going to address the async PSO coverage gap, say so. But don't tell me it's experimental. I already know. I measured it.
