@@ -141,6 +141,16 @@ A proper engine-side solution could include:
 - persisting an appropriate PSO cache between runs if the engine architecture supports it;
 - avoiding render-thread waits on cold PSO creation during normal driving.
 
+## Engine-level conclusion
+
+If this is only a missing async-preparation path, then SCS should fix that path.
+
+If the current renderer architecture cannot reliably keep cold PSO creation off the latency-critical draw path, then the answer should not be another layer of workarounds. At that point the graphics layer needs to be replaced or substantially reworked.
+
+Prism3D has accumulated enough rendering debt. Modern APIs should not be treated as another compatibility layer bolted onto assumptions from a much older graphics era.
+
+In plain terms: if this problem is architectural, stop polishing the fossil and replace the renderer underneath it.
+
 ## Why this repository remains public
 
 I am not going to keep reverse-engineering and patching a commercial game's renderer from the outside.
