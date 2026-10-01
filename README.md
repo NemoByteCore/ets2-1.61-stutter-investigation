@@ -4,6 +4,10 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 **Not affiliated with SCS Software. Not commissioned by SCS. Not made for SCS.**
 
+## Manifesto
+
+**[Read the full DX12 / Prism3D manifesto](MANIFESTO.md)**
+
 I investigated this for myself because the game was stuttering badly enough to make me dig into Prism3D. The repository remains public only because the results are useful evidence and because I am not going to keep doing unpaid renderer work for the game's developers.
 
 ## Status
