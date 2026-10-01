@@ -14,6 +14,14 @@ This repository is no longer an active reverse-engineering project. It is being 
 
 After narrowing the issue from frame-time spikes down to the DX12 draw path, the remaining problem is clear enough that continuing to build external patches no longer makes sense.
 
+## Test scope
+
+The stutter was reproduced and investigated in both:
+- **vanilla ETS2**
+- **modded ETS2**
+
+Mods were therefore not required to reproduce the underlying DX12 stall class documented here. Modded runs were useful for broader workload coverage, but the issue was not dependent on ProMods or other gameplay/content mods.
+
 ## Final finding
 
 The dominant stutter class investigated here is caused by **cold DX12 graphics pipeline state object (PSO) creation happening synchronously on the draw path**.
