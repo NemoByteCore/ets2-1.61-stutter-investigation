@@ -14,6 +14,14 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 > Archived in case SCS decides to magically lose the post.
 
+## Runtime evidence archive
+
+**[Accepted 1.61 runtime evidence](evidence/runtime/1.61/README.md)**
+
+**[Historical 1.60 investigation](legacy/1.60/README.md)**
+
+The runtime archive preserves the exact-correlation result, the localization ladder, the controlled synchronous/async A/B, failed prewarm directions and the final async-coverage result. The 1.60 archive keeps the earlier methodology and negative results clearly separated from current 1.61 truth.
+
 I investigated this for myself because the game was stuttering badly enough to make me dig into Prism3D. The repository remains public only because the results are useful evidence and because I am not going to keep doing unpaid renderer work for the game's developers.
 
 ## Status
