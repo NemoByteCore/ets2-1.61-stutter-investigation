@@ -8,6 +8,12 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 **[Read the full DX12 / Prism3D manifesto](MANIFESTO.md)**
 
+## Forum evidence archive
+
+**[Screenshots + Wayback backup of the locked SCS forum thread](evidence/forum/README.md)**
+
+> Archived in case SCS decides to magically lose the post.
+
 I investigated this for myself because the game was stuttering badly enough to make me dig into Prism3D. The repository remains public only because the results are useful evidence and because I am not going to keep doing unpaid renderer work for the game's developers.
 
 ## Status
