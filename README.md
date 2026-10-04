@@ -8,6 +8,14 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 **[Read the full DX12 / Prism3D manifesto](MANIFESTO.md)**
 
+## Community tracking and requested response
+
+**[Community stutter tracker](COMMUNITY_STUTTER_TRACKER.md)**
+
+**[What we want from SCS](WHAT_WE_WANT_FROM_SCS.md)**
+
+The community tracker links public reports of stutter and version-to-version regressions without assuming that every report has the same root cause. The request document states the narrow technical questions and concrete actions SCS can address directly.
+
 ## Forum evidence archive
 
 **[Screenshots + Wayback backup of the locked SCS forum thread](evidence/forum/README.md)**
