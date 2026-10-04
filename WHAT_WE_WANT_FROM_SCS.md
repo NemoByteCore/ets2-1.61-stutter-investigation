@@ -1,12 +1,50 @@
 # What We Want From SCS
 
-This is the narrow request.
+## Fix the foundation of the game
 
-The public investigation has already identified one reproducible engine-side stutter mechanism in ETS2 1.61.1.1 DX12. The useful next step is not another round of generic player-side troubleshooting. It is a technical response to the evidence and an engine-side plan.
+This is not a request for another `config.cfg` tweak, another generic troubleshooting checklist, or another argument about whether one renderer is officially ready.
 
-## 1. Address the 27/27 async-coverage result
+The request is simpler:
 
-The central result is:
+> **Fix the engine-level performance problems that are damaging normal gameplay. Modernize Prism3D where it can be modernized. Replace or substantially rewrite the parts that cannot be made reliable.**
+
+Players should not have to reverse-engineer a commercial game's renderer to prove that a visible stutter is happening inside the engine.
+
+## Stop treating engine problems as player-side problems by default
+
+When a report includes profiler traces, controlled A/B tests, call-path instrumentation and reproducible timings, answers such as:
+
+- `send game.log`;
+- `DX12 is not ready`;
+- `other users can play without stutters`;
+- `try different settings`;
+
+are not technical answers to that evidence.
+
+A `game.log.txt` can be useful for configuration, hardware, scripts and mods. It cannot contain the render-thread timing or PSO instrumentation used in this investigation.
+
+If SCS disagrees with the evidence, challenge the evidence. If the mechanism is understood, fix it. Do not substitute a support-script response for an engineering response.
+
+## Fix, modernize or replace the renderer components that cannot deliver stable frametimes
+
+The investigation in this repository proved one specific engine-side stutter mechanism in ETS2 1.61.1.1 DX12:
+
+```text
+FUN_1402A06D0
+-> FUN_1402AAA60
+-> FUN_14029DD00(..., wait=1)
+```
+
+Cold graphics PSOs reached first use synchronously and produced large gameplay stalls.
+
+The same build already contains an async preparation path:
+
+```text
+FUN_14029E0F0
+-> FUN_14029DD00(..., wait=0)
+```
+
+Final measured coverage:
 
 ```text
 async_total = 0
@@ -15,80 +53,92 @@ slow_seen   = 0
 slow_unseen = 27
 ```
 
-All 27 measured slow PSOs reached synchronous first use without prior coverage from the existing async preparation path.
+All 27 measured slow PSOs reached synchronous first use without prior observed coverage from that async path.
 
-The question is simple:
+Forcing `wait=0` removed the large synchronous stalls but caused skipped draws / black flashes while compilation was still pending. That shows why a player-side flag flip is not the solution: the engine has to prepare the required work before first use.
 
-> Why are graphics PSOs reaching `FUN_1402AAA60` cold and forcing `FUN_14029DD00(..., wait=1)`, while the existing `FUN_14029E0F0 -> FUN_14029DD00(..., wait=0)` preparation path is not covering them before first draw?
+This exact mechanism was proven for the investigated 1.61.1.1 DX12 build. It is not being claimed as the explanation for every ETS2 or ATS stutter report.
 
-A technical answer to that question would address the actual finding.
+The broader demand is straightforward: **stable frametimes have to become an engine responsibility, not something players are expected to patch around.**
 
-## 2. Keep cold PSO compilation off the latency-critical draw path
+If the existing Prism3D architecture can be brought up to that standard, modernize it.
 
-The controlled `wait=0` experiment showed that removing the synchronous wait removes the large stall, but a still-pending PSO can cause the draw to be skipped.
+If parts of it cannot, replace or substantially rewrite those parts.
 
-That means simply changing one flag is not the solution.
+## Stop prioritizing an endless DLC pipeline over the condition of the base game
 
-The engine needs to ensure required PSOs are prepared before first use.
+ETS2 and ATS are long-running commercial products with a continuing stream of paid content.
 
-Possible engine-side directions include:
-- improving async PSO discovery / coverage;
-- scheduling preparation after required dependencies are valid but before first draw;
-- persisting appropriate pipeline-cache data between runs where the architecture permits it;
-- avoiding synchronous cold compilation during normal driving.
+That makes the condition of the underlying game more important, not less.
 
-The exact implementation is SCS's engineering decision. The requirement is the important part: cold PSO work should not block the draw path during gameplay.
+We want SCS to stop treating new paid DLC as a higher priority than long-standing engine, renderer and frametime problems.
 
-## 3. Treat profiler evidence as profiler evidence
+If engineering capacity is insufficient to do both properly, then the sensible priority is the foundation that every existing and future DLC depends on.
 
-A `game.log.txt` can be useful for configuration, hardware, mod and script information.
+That can mean slowing or pausing new paid DLC releases while core performance work is brought under control.
 
-It cannot substitute for:
-- render-thread timing;
-- PSO compilation timing;
-- call-path instrumentation;
-- async-coverage measurements.
+This is not an argument that map artists or asset creators should suddenly become renderer engineers. It is a request for SCS as a company to allocate enough time, staffing and budget to the engine instead of allowing the content pipeline to continue indefinitely while fundamental performance complaints remain unresolved.
 
-When a report includes instrumented evidence outside the scope of `game.log.txt`, the response process should be able to engage with that evidence directly rather than treating the absence of a game log as proof that there is no bug.
+## Stop hiding behind renderer-status arguments
 
-## 4. Clarify renderer status without using status as a technical answer
+Saying that DX12 is experimental or not the primary supported renderer may explain support policy.
 
-SCS can say that a renderer is experimental or unsupported.
+It does not make a measured engine defect disappear.
 
-That is a product-support statement.
+Likewise, saying that some other users do not stutter does not disprove a reproducible bug affecting a particular path, workload or subset of machines.
 
-It does not answer whether a reproducible defect exists inside that renderer.
+Support status and technical reality are different questions.
 
-For the investigated 1.61.1.1 DX12 build, the cold-PSO synchronous stall and missing async coverage were measured directly. A support-status label does not change that technical result.
+## Give players a real engine roadmap
 
-## 5. Publish a concrete stutter / renderer improvement plan
+We want a public plan for the technical foundation of ETS2 and ATS, including:
 
-Players do not need a promise that every hitch will disappear immediately.
-
-A useful response would be a concrete plan covering areas such as:
-- shader / PSO preparation;
-- render-thread stall reduction;
-- pipeline-cache behavior;
 - frametime consistency;
-- regression testing across renderer and game updates.
+- render-thread stalls;
+- shader / PSO preparation and caching;
+- DX11 / DX12 renderer direction;
+- regression testing between game versions;
+- what parts of Prism3D are being modernized;
+- what parts, if any, are being replaced.
 
-Even a staged plan is more useful than repeatedly pushing every report back toward local settings.
+It does not need to promise that every hitch will vanish overnight.
 
-## What this document is not asking for
+It does need to be more concrete than telling players to keep changing local settings while the same class of complaints continues to appear.
 
-This document is not claiming:
-- that every ETS2 or ATS stutter report has the same root cause;
-- that the exact 1.61 DX12 mechanism has been proven on DX11;
-- that the exact mechanism has been proven on ATS;
-- that one external patch should be adopted as-is;
-- that SCS must rewrite the entire renderer immediately.
+## What would count as an actual response
 
-It is asking for a technical response to a specific measured result, followed by an engine-side fix or a credible engineering plan.
+Any of the following would move this forward:
+
+- acknowledge the measured 1.61.1.1 DX12 issue and explain what is happening;
+- show that the technical conclusion is wrong and provide evidence;
+- fix the cold first-use path in a future build;
+- demonstrate improved async PSO coverage;
+- publish a broader renderer / engine performance roadmap;
+- explain what architectural work is being done to prevent recurring frametime regressions.
+
+What does **not** answer the issue:
+
+- another generic troubleshooting list;
+- `works for me`;
+- `send game.log` as a substitute for profiler evidence;
+- `DX12 is experimental` as if that invalidates the measurement;
+- continuing to ship paid content while never addressing the underlying engineering question.
+
+## The point
+
+Players are not asking SCS to adopt an external hack.
+
+They are asking SCS to maintain the foundation of the games they continue to sell content for.
+
+**Fix it. Modernize it. Replace the parts that need replacing. Give engine work the priority it needs. And stop treating recurring stutter reports as something the player must keep solving locally.**
 
 ## Evidence
 
 Full investigation:
 https://github.com/NemoByteCore/ets2-1.61-stutter-investigation
+
+Community stutter tracker:
+[COMMUNITY_STUTTER_TRACKER.md](COMMUNITY_STUTTER_TRACKER.md)
 
 Accepted 1.61 runtime evidence:
 [evidence/runtime/1.61/README.md](evidence/runtime/1.61/README.md)
