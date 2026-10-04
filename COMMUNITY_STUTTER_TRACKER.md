@@ -200,6 +200,27 @@ Status:
 - because it covers both ETS2 and ATS, it is useful as a frametime / stutter report but does not prove a shared underlying mechanism;
 - not proven to be the same 1.61 DX12 cold-PSO mechanism.
 
+### Historical precedent: stuttering since 1.38
+
+Official SCS forum:
+https://forum.scssoft.com/viewtopic.php?t=289392
+
+Relevant page:
+https://forum.scssoft.com/viewtopic.php?start=10&t=289392
+
+Why it is relevant:
+- the thread dates back to 2020 and reports stuttering beginning with ETS2 / ATS 1.38 while 1.37 had been smooth for the original author;
+- a global moderator replied: `Stuttering is not a bug, it's poor performance in your computer.`;
+- the original author pushed back that the stutter appeared after the game update, happened without FPS drops and persisted across graphics settings;
+- another participant reported the same problem from 1.38 and said launch parameters did not solve it;
+- after ETS2 1.39 released, the original author reported that the stuttering occurred much less often, although it was not completely solved;
+- this makes the thread useful as a historical example where a stutter report was framed as local PC performance, yet a later game update materially changed the symptom.
+
+Status:
+- historical community / forum evidence;
+- this does not prove the 2020 issue had the same technical cause as the 1.61 DX12 PSO issue;
+- it is included because the handling pattern and version-dependent behavior are relevant to the broader history of SCS stutter reports.
+
 ## How to add a report
 
 A useful entry should include as much of the following as the original author actually supplied:
