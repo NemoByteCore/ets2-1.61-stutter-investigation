@@ -8,11 +8,17 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 **[Read the full DX12 / Prism3D manifesto](MANIFESTO.md)**
 
-## Community-made creator briefing
+## Community creator resources
 
-**[ETS2 1.61 Stutter Dossier — community creator briefing (PDF)](community/creator-briefings/ETS2_1.61_Stutter_Dossier_EN.pdf)**
+Community-made material for journalists, YouTubers, streamers and translators:
 
-This independent briefing was prepared by a community member to make the investigation easier for journalists, YouTubers and streamers to communicate accurately. It is not an official or endorsed NemoByteCore publication. The repository's own technical evidence and current Markdown documents remain canonical; if the briefing and the live repository ever differ, use the repository.
+- **[English creator briefing](community/creator-briefings/CREATOR_BRIEFING_EN.md)**
+- **[Guía para creadores en español](community/creator-briefings/CREATOR_BRIEFING_ES.md)**
+- **[English YouTube script](community/creator-briefings/YOUTUBE_SCRIPT_EN.md)**
+- **[Guion de YouTube en español](community/creator-briefings/YOUTUBE_SCRIPT_ES.md)**
+- **[English creator dossier (PDF)](community/creator-briefings/ETS2_1.61_Stutter_Dossier_EN.pdf)**
+
+These are independent community outreach resources based on the investigation. They are not the canonical technical record. The repository's evidence and live Markdown documents remain authoritative; if a briefing and the repository ever differ, use the repository. The current campaign position is always the live **[What we want from SCS](WHAT_WE_WANT_FROM_SCS.md)**.
 
 ## Community tracking and requested response
 
