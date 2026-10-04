@@ -163,6 +163,43 @@ Status:
 - public report only;
 - no root-cause equivalence is claimed.
 
+### 1.59 beta poor performance
+
+https://steamcommunity.com/app/227300/discussions/0/803470896719307261/
+
+Why it is relevant:
+- Steam community report from the 1.59 open-beta period;
+- the original author reports that 1.58 was fine while 1.59 introduced menu and in-game stuttering;
+- another participant reports 80–100 FPS outside cities but 1% lows around 20–30 FPS, describing the result as slideshow-like;
+- multiple participants independently report stuttering in the same thread;
+- one suggested workaround, deleting `config.cfg`, helped some participants but did not work for everyone;
+- at least one participant reports testing without mods.
+
+Status:
+- public community report;
+- this is beta-period evidence and should be treated as such;
+- the thread contains mixed outcomes and workarounds, so it is evidence of recurring symptoms, not proof of one shared root cause;
+- not proven to be the same 1.61 DX12 cold-PSO mechanism.
+
+### Game unplayable due to lags
+
+https://steamcommunity.com/app/227300/discussions/0/767437998196505378/
+
+Why it is relevant:
+- author reports the issue in both ETS2 and ATS;
+- hardware listed: Ryzen 5 5600X, RX 7600, 16 GB RAM, SSD, Windows 10;
+- game is explicitly described as vanilla with no mods;
+- average framerate is reported around 80 FPS, with recurring drops such as 82 -> 52 -> 80 FPS over 1–2 seconds;
+- the author describes visible freezing / rubber-banding during those drops despite otherwise playable average FPS;
+- graphics settings, refresh-rate changes, anisotropic filtering, SSAO changes and `config.cfg` edits reportedly did not solve it;
+- the symptom reportedly recurs every roughly 20–30 seconds.
+
+Status:
+- public community report;
+- the author says the problem has existed since 1.58, so this is not evidence of a 1.58 -> 1.59 regression;
+- because it covers both ETS2 and ATS, it is useful as a frametime / stutter report but does not prove a shared underlying mechanism;
+- not proven to be the same 1.61 DX12 cold-PSO mechanism.
+
 ## How to add a report
 
 A useful entry should include as much of the following as the original author actually supplied:
