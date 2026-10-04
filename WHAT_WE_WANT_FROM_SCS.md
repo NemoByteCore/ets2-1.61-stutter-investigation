@@ -79,6 +79,23 @@ So "DX12 is not ready" does not end the discussion.
 
 If SCS rejects DX12 evidence as out of scope, then show the plan for stable frametimes on the renderer that *is* in scope.
 
+## A recurring support-case reframing pattern
+
+Whether intentional or not, asking for `game.log` can reframe a measured renderer or frametime problem as a machine-specific support case instead of addressing the evidence that was actually provided.
+
+That is not a hypothetical concern. There are multiple public examples where version-dependent stutter reports were redirected toward the user's machine, configuration or logs:
+
+- **2018, ETS2 1.32 — `Lag/slowing down bug [NOT A BUG]`:** the reporter had already reformatted Windows, reinstalled the game, created a new no-mod profile and tested minimum settings. The issue was reported as new in 1.32 after 1.31 had been smooth. A `game.log` was supplied; discussion still moved toward local hardware / GPU limitations, and the thread remained marked `[NOT A BUG]`.
+- **2020, ETS2/ATS 1.38:** a global moderator explicitly attributed the stuttering to poor performance on the user's computer. The reporter replied that 1.37 had been smooth, the symptom appeared with 1.38, persisted across graphics settings and occurred without corresponding FPS drops. After 1.39 released, the same reporter said the stuttering occurred much less often.
+- **2025, ATS/ETS2 1.55:** in a long frame-pacing thread, SCS staff asked users for `game.log` files and suggested disabling mods, overlays, driver optimizations, launch parameters and resetting configuration because the problem was not reproduced internally. Those steps can be reasonable diagnostics, but they again shift the working frame toward isolated local causes unless engine-side evidence is considered alongside them.
+- **2026, this investigation:** the report included exact build information, timings, controlled A/B testing, call-path instrumentation and the final async-coverage result. The discussion was still redirected toward DX11 / `game.log`, and the technical 27/27 result was not addressed before the thread was locked and marked `[NOT A BUG]`.
+
+These cases do **not** prove a malicious intent to blame players.
+
+They do show a recurring outcome: version-dependent or instrumented performance reports can be handled primarily as per-machine troubleshooting even when the available evidence points beyond ordinary local configuration.
+
+That is why the request here is simple: use `game.log` when it is useful, but do not let it replace profiler evidence, reproducible version regressions or engine-side measurements.
+
 ## Fix, modernize or replace the parts of Prism3D that are holding the games back
 
 Players should not care whether the final answer is:
