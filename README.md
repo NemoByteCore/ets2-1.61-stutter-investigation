@@ -8,6 +8,12 @@ Independent reverse-engineering notes from a player who wanted to find out why *
 
 **[Read the full DX12 / Prism3D manifesto](MANIFESTO.md)**
 
+## Community-made creator briefing
+
+**[ETS2 1.61 Stutter Dossier — community creator briefing (PDF)](community/creator-briefings/ETS2_1.61_Stutter_Dossier_EN.pdf)**
+
+This independent briefing was prepared by a community member to make the investigation easier for journalists, YouTubers and streamers to communicate accurately. It is not an official or endorsed NemoByteCore publication. The repository's own technical evidence and current Markdown documents remain canonical; if the briefing and the live repository ever differ, use the repository.
+
 ## Community tracking and requested response
 
 **[Community stutter tracker](COMMUNITY_STUTTER_TRACKER.md)**
