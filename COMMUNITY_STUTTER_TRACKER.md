@@ -84,15 +84,25 @@ Status:
 
 ### Constant stuttering every couple of seconds in ETS2 1.60 / 1.58 works fine
 
+Reddit:
 https://www.reddit.com/r/trucksim/comments/1utiq3r/constant_stuttering_every_couple_of_seconds_in/
+
+Official SCS forum version of the same case:
+https://forum.scssoft.com/viewtopic.php?p=2148906
 
 Why it is relevant:
 - reports a strong version-to-version difference;
+- the official forum post identifies an i7-14700K, RTX 4080 SUPER, 32 GB DDR5 system;
+- the author reports that 1.58 works smoothly while 1.59 and 1.60 stutter badly;
+- the author describes extensive troubleshooting: clean reinstall, no mods, new profile, Windows reinstall, BIOS changes, DDU / different GPU drivers, offline mode, FPS limiting and configuration changes;
+- a later post says the 1.61 beta showed the same stuttering;
+- another participant with an i7-14700K and RTX 4070 Ti Super reports stutter in both ETS2 and ATS;
 - aligns with the existence of measurable 1.58 -> 1.60 render-side regressions documented in the historical archive.
 
 Status:
+- the Reddit and SCS forum links appear to describe the same primary report and are therefore treated as one case, not two independent reports;
 - public report only;
-- the exact 1.61 cold-PSO mechanism must not be retroactively assigned to this 1.60 case.
+- the exact 1.61 cold-PSO mechanism must not be retroactively assigned to this 1.59/1.60 case.
 
 ### ATS and ETS 2 stutters problem
 
@@ -105,6 +115,41 @@ Why it is relevant:
 Status:
 - public report only;
 - the accepted cold-PSO result in this repository was proven on ETS2 1.61.1.1 DX12, not ATS.
+
+### Micro-stuttering in ETS 2, starting from versions 1.59–1.61, regardless of PC performance
+
+https://forum.scssoft.com/viewtopic.php?p=2159985
+
+Why it is relevant:
+- official SCS forum report dated 17 September 2026;
+- author reports i9-13900KS, RTX 3060 Ti, 32 GB RAM and SSD;
+- version 1.58 is reported as smooth at Ultra settings;
+- versions 1.59, 1.60 and 1.61 are all reported to show micro-stuttering;
+- lowering graphics settings to minimum did not remove the symptom;
+- the author later reports that suggested refresh-rate / averaging changes, HAGS changes and disabling overlays did not solve it;
+- the author explicitly states that the current client is being used without modifications;
+- another participant in the same thread reports a separate 1.58-smooth / 1.61-stuttering experience on an i5-14600K / RX 9070 XT system.
+
+Status:
+- public report only;
+- the thread contains multiple user experiences and later troubleshooting developments, so individual outcomes should not be collapsed into one root-cause claim;
+- not proven to be the same 1.61 DX12 cold-PSO mechanism.
+
+### Stuttering since 1.59-60
+
+https://forum.scssoft.com/viewtopic.php?t=352303
+
+Why it is relevant:
+- official SCS forum report dated 29 June 2026;
+- author reports stuttering beginning with version 1.59 in both ETS2 and ATS while 1.58 and earlier were fine;
+- symptom is reported during driving and camera changes;
+- the author tested V-Sync, FPS limiting and modded versus vanilla profiles without changing the behavior;
+- the author checked the game log and did not identify an obvious explanation there.
+
+Status:
+- public report only;
+- because the report covers both ETS2 and ATS, it is useful evidence of a recurring symptom pattern but not proof of a shared engine mechanism;
+- the exact 1.61 DX12 cold-PSO result in this repository was not proven on ATS.
 
 ### HELP HOW DO I FIX THESE MICRO STUTTERS
 
