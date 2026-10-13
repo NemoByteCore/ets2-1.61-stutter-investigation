@@ -118,6 +118,18 @@ And the company lets them do it. Because as long as the community polices itself
 
 This is not unique to SCS. But it is particularly visible here because the evidence is so one-sided. I gave them a stack trace, a named function, a measured coverage gap, and a public repo. They gave me a green stamp, a locked thread, and a "[NOT A BUG]" tag.
 
+## The other part of the problem: a divided and passive community
+
+SCS owns the renderer. Players do not owe a commercial studio unpaid engineering, reverse engineering, or months of debugging. I went much further than anyone should have to just to understand why a game I bought was stuttering.
+
+But the community has a role here too. Similar complaints have circulated for years, often ending with someone reinstalling Windows, trying yet another config tweak, or giving up. Then the next player starts from zero. Some reply "works on my machine"; others argue about the messenger's tone instead of the measurements. Meanwhile the reports remain scattered, and the underlying problem is easier to treat as a series of isolated PC issues.
+
+I am not calling people lazy for lacking the technical knowledge to diagnose a renderer. Most players just want to play, and that is reasonable. **What frustrates me is seeing the same problem acknowledged again and again without enough collective follow-through to demand an answer.** Reporting that a game stutters matters. Supporting existing reports, comparing versions, sharing reproducible conditions and asking SCS to address documented evidence matter even more.
+
+Nobody needs to reverse-engineer Prism3D to help. Players can provide honest DX11/DX12 comparisons, say whether they tested vanilla or modded, point others toward existing evidence instead of repeating generic troubleshooting, and ask publicly for measurable frametime improvements and a credible engine roadmap. People who are dissatisfied can also make their own purchasing decisions and leave accurate reviews based on their experiences. That is different from harassment, review spam or attacking individual developers.
+
+I cannot prove that stronger community pressure would already have fixed the game. **The responsibility for fixing it remains with SCS.** But when complaints stay fragmented, it is easier to dismiss them one by one. A sustained, evidence-based demand from players would make that much harder. That is one of the reasons this investigation is public: not just to show what I found, but to give other players something concrete to stand behind.
+
 ## The technical evidence
 
 Everything is public. Nothing here is speculation.
