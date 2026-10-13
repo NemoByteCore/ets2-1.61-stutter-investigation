@@ -221,6 +221,25 @@ Status:
 - this does not prove the 2020 issue had the same technical cause as the 1.61 DX12 PSO issue;
 - it is included because the handling pattern and version-dependent behavior are relevant to the broader history of SCS stutter reports.
 
+### ETS2 1.61.1.1 DX11: measured 50–140 ms main-thread hitches (QuiteJuze, October 2026)
+
+Official SCS forum:
+https://forum.scssoft.com/viewtopic.php?t=354364
+
+Why it is relevant:
+- Independent technical report from **7–8 October 2026**, separate from this repository's DX12 analysis. The author reports ETS2 **1.61.1.1, DX11, Steam, zero active mods**, on a **Ryzen 7 5700X3D / RTX 4060 8 GB / 32 GB RAM / Windows 10** machine.
+- The author recorded recurring **~50–140 ms frame-time hitches** (including a cited range of 50–142 ms) while driving, despite substantially smoother frames between spikes. The initial post reports **42 hitches in approximately five minutes across five sessions**; the follow-up expands the investigation to **eight sessions**.
+- Supplied or described evidence includes **PresentMon per-frame captures**, synchronized performance-counter sampling, **ETW CPU stacks**, **Process Monitor I/O observations**, `game.log.txt`, `config.cfg`, system specs and hitch timelines. The forum posts link supporting attachments; this tracker does not mirror or independently re-analyze those raw files.
+- According to the author's sampled stacks, hitch periods concentrate in main-thread **D3DKMTLock2 / VidMm / MmProbeAndLockPages-related** activity. The author hypothesizes D3D11 resource mapping/locking and memory/cache maintenance as the stall source. That interpretation remains **the reporting author's hypothesis**, not a mechanism independently confirmed by this repository.
+- The author's follow-up says Process Monitor showed no game-process file I/O coincident with the stalls, and identifies streaming reads on background threads rather than the main-thread hitch interval.
+- The author says similar symptoms have been present on their systems since **approximately 2017**, across different game versions and PCs. This is **retrospective testimony**, not continuous benchmark evidence or proof of a single unchanged bug since 2017.
+- On **9 October 2026**, **Tom (SCS Software)** thanked the author for the detailed report and said it **had been forwarded to the relevant people**. He questioned whether a 2017-era symptom must have the same cause today, and suggested checking the manually constrained pagefile (reported 1000–5992 MB) and SSD free space. The visible reply **did not directly validate or refute** the proposed D3DKMTLock2 mechanism; it also does **not establish** that the report was rejected or ignored.
+
+Status and limits:
+- **Technically instrumented, independent DX11 report** and documented SCS acknowledgment; raw captures and symbolization have **not** been reproduced or validated in this repository.
+- Important comparative evidence of significant hitching on DX11 without active mods; **not** confirmation of the DX12 cold-PSO / async-preparation failure measured in this repo.
+- Different renderers and observed call paths mean these cases may have **different causes**. SCS's response documents receipt and preliminary troubleshooting, **not** a final root-cause finding or implemented fix.
+
 ## How to add a report
 
 A useful entry should include as much of the following as the original author actually supplied:
